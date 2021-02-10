@@ -1,7 +1,6 @@
 #pragma once
 
 #include "hittable.h"
-#include "material.h"
 
 class Sphere : public Hittable {
 public:
@@ -11,6 +10,7 @@ public:
 	~Sphere() { delete material; }
 	
 	bool hit(const Ray &ray, double tMax, HitRecord &record) const override;
+	bool boundingBox(AABB& aabb) const override;
 
 private:
 	Vec3 center;

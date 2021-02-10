@@ -32,6 +32,8 @@ public:
 	inline double& y() { return X[1]; }
 	inline const double& z() const { return X[2]; }
 	inline double& z() { return X[2]; }
+	inline const double& operator[](int i) const { return X[i]; }
+	inline double& operator[](int i) { return X[i]; }
 
 	static Vec3 random() { return Vec3(Random::real(), Random::real(), Random::real()); }
 	static Vec3 randomRange(double a, double b) {

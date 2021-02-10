@@ -21,3 +21,9 @@ bool Sphere::hit(const Ray &ray, double tMax, HitRecord &record) const {
 	}
 	return false;
 }
+
+bool Sphere::boundingBox(AABB& aabb) const {
+	Vec3 r(radius, radius, radius);
+	aabb = AABB(center - r, center + r);
+	return true;
+}

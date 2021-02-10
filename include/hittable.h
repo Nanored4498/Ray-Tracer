@@ -1,6 +1,7 @@
 #pragma once
 
 #include "material.h"
+#include "aabb.h"
 #include <vector>
 
 struct HitRecord {
@@ -14,6 +15,7 @@ public:
 	virtual ~Hittable() {}
 
 	virtual bool hit(const Ray &ray, double tMax, HitRecord &record) const = 0;
+	virtual bool boundingBox(AABB& aabb) const = 0;
 };
 
 class HittableList : public Hittable {
@@ -23,6 +25,7 @@ public:
 	}
 
 	bool hit(const Ray &ray, double tMax, HitRecord &record) const override;
+	bool boundingBox(AABB& aabb) const override;
 
 	void add(Hittable *object) { objects.push_back(object); }
 

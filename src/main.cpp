@@ -68,6 +68,14 @@ HittableList randomScene() {
 }
 
 int main() {
+	// auto start = std::chrono::high_resolution_clock::now();
+	// for(int i = 0; i < 20000000; ++i) {
+	// }
+	// std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() << std::endl;
+	// start = std::chrono::high_resolution_clock::now();
+	// for(int i = 0; i < 20000000; ++i) {
+	// }
+	// std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() << std::endl;
 	Random::init();
 	HittableList world = randomScene();
 
