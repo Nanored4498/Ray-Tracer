@@ -1,7 +1,6 @@
 #pragma once
 
 #include "random.h"
-#include <iostream>
 
 class Vec2 {
 public:

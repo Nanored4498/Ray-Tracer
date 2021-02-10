@@ -12,6 +12,10 @@ const int imgWidth = 1280;
 const int sqrtSamplesPerPixel = 18;
 const int maxDepth = 60;
 
+const double fogDensity = 3.e-2;
+const double fogHeight = 8.;
+const double fogRadius = 24.;
+
 const int imgHeight = imgWidth / aspectRatio;
 
 Color rayColor(const Ray &ray, const Hittable &world, int depth) {
@@ -20,14 +24,16 @@ Color rayColor(const Ray &ray, const Hittable &world, int depth) {
 		if(world.hit(ray, std::numeric_limits<double>::max(), record)) {
 			Color attenuation;
 			Ray scattered;
-			if(record.material->scatter(ray, record, attenuation, scattered))
-				return attenuation * rayColor(scattered, world, depth-1);
-			else
-				return Color(0., 0., 0.);
+			if(record.material->scatter(ray, record, attenuation, scattered)) {
+				double fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y + scattered.origin().y)/fogHeight));
+				return fogCoeff * attenuation * rayColor(scattered, world, depth-1);
+			} else return Color(0., 0., 0.);
 		}
 		// background color
 		double t = .5 * (ray.direction().y + 1.);
-		return Color(1. - .5*t, 1. - .3*t, 1.);
+		double rayFogDist = ray.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y) / ray.direction().y);
+		double fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y/fogHeight));
+		return fogCoeff * 1.2 * Color(1. - .5*t, 1. - .3*t, 1.);
 	}
 	return Color(0., 0., 0.);
 }
@@ -47,7 +53,7 @@ HittableList randomScene() {
 			if((center - Vec3(-4., 1., 0.)).norm2() < 1.44) continue;
 			Material *mat;
 			double rand_mat = Random::real();
-			if(rand_mat < .75) mat = new Lambertian(Color::random() * Color::random());
+			if(rand_mat < .7) mat = new Lambertian(Color::random() * Color::random());
 			else if(rand_mat < .95) mat = new Metal(Color::randomRange(.5, 1.), Random::realRange(0., 0.5));
 			else mat = new Dielectric(1.5);
 			world.add(new Sphere(center, .2, mat));
@@ -56,7 +62,7 @@ HittableList randomScene() {
 
 	world.add(new Sphere(Vec3(-4., 1., 0.), 1., new Lambertian(Vec3(.4, .2, .1))));
 	world.add(new Sphere(Vec3(0., .95, 0.), .95, new Dielectric(1.5)));
-	world.add(new Sphere(Vec3(0., .95, 0.), .7, new Dielectric(1.5), true));
+	world.add(new Sphere(Vec3(0., .95, 0.), .75, new Dielectric(1.5), true));
 	world.add(new Sphere(Vec3(4., .9, 0.), .9, new Metal(Vec3(.7, .6, .5), 0.)));
 	return world;
 }
