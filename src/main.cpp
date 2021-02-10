@@ -9,7 +9,7 @@ const double fov = 30.;
 const double aperture = 0.09;
 const double aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
-const int sqrtSamplesPerPixel = 18;
+const int sqrtSamplesPerPixel = 5;
 const int maxDepth = 60;
 
 const double fogDensity = 3.e-2;
@@ -25,14 +25,14 @@ Color rayColor(const Ray &ray, const Hittable &world, int depth) {
 			Color attenuation;
 			Ray scattered;
 			if(record.material->scatter(ray, record, attenuation, scattered)) {
-				double fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y + scattered.origin().y)/fogHeight));
+				double fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y() + scattered.origin().y())/fogHeight));
 				return fogCoeff * attenuation * rayColor(scattered, world, depth-1);
 			} else return Color(0., 0., 0.);
 		}
 		// background color
-		double t = .5 * (ray.direction().y + 1.);
-		double rayFogDist = ray.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y) / ray.direction().y);
-		double fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y/fogHeight));
+		double t = .5 * (ray.direction().y() + 1.);
+		double rayFogDist = ray.direction().y() < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y()) / ray.direction().y());
+		double fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y()/fogHeight));
 		return fogCoeff * 1.2 * Color(1. - .5*t, 1. - .3*t, 1.);
 	}
 	return Color(0., 0., 0.);
@@ -88,9 +88,9 @@ int main() {
 			}
 			col /= sqrtSamplesPerPixel * sqrtSamplesPerPixel;
 			int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
-			img[pix] = std::min(.999, std::max(0., std::pow(col.x, 1./2.2))) * 256.;
-			img[pix+1] = std::min(.999, std::max(0., std::pow(col.y, 1./2.2))) * 256.;
-			img[pix+2] = std::min(.999, std::max(0., std::pow(col.z, 1./2.2))) * 256.;
+			img[pix] = std::min(.999, std::max(0., std::pow(col.x(), 1./2.2))) * 256.;
+			img[pix+1] = std::min(.999, std::max(0., std::pow(col.y(), 1./2.2))) * 256.;
+			img[pix+2] = std::min(.999, std::max(0., std::pow(col.z(), 1./2.2))) * 256.;
 		}
 	}
 	stbi_write_png("out.png", imgWidth, imgHeight, 3, img, 0);
