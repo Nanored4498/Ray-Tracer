@@ -12,7 +12,11 @@ public:
 	bool hit(const Ray &ray, double tMax, HitRecord &record) const override;
 	bool boundingBox(AABB& aabb) const override;
 
+	static unsigned long long getNbIntersections() { return nbIntersections; }
+
 private:
+	inline static unsigned long long nbIntersections = 0;
+
 	Vec3 center;
 	double radius;
 	Material *material;

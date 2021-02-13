@@ -68,14 +68,7 @@ HittableList randomScene() {
 }
 
 int main() {
-	// auto start = std::chrono::high_resolution_clock::now();
-	// for(int i = 0; i < 20000000; ++i) {
-	// }
-	// std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() << std::endl;
-	// start = std::chrono::high_resolution_clock::now();
-	// for(int i = 0; i < 20000000; ++i) {
-	// }
-	// std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count() << std::endl;
+	auto start = std::chrono::high_resolution_clock::now();
 	Random::init();
 	HittableList world = randomScene();
 
@@ -101,6 +94,12 @@ int main() {
 			img[pix+2] = std::min(.999, std::max(0., std::pow(col.z(), 1./2.2))) * 256.;
 		}
 	}
+
+	auto end = std::chrono::high_resolution_clock::now();
+	auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	std::cout << "Time: " << time << " (ms)\n";
+	std::cout << "Sphere intersections: " << Sphere::getNbIntersections() << "\n";
+
 	stbi_write_png("out.png", imgWidth, imgHeight, 3, img, 0);
 
 	return 0;

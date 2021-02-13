@@ -3,6 +3,7 @@
 #include "material.h"
 #include "aabb.h"
 #include <vector>
+#include <memory>
 
 struct HitRecord {
 	Vec3 pos, normal;
@@ -20,15 +21,13 @@ public:
 
 class HittableList : public Hittable {
 public:
-	~HittableList() {
-		for(Hittable *object : objects) delete object;
-	}
+	~HittableList() {}
 
 	bool hit(const Ray &ray, double tMax, HitRecord &record) const override;
 	bool boundingBox(AABB& aabb) const override;
 
-	void add(Hittable *object) { objects.push_back(object); }
+	void add(Hittable *object) { objects.emplace_back(object); }
 
 private:
-	std::vector<Hittable*> objects;
+	std::vector<std::shared_ptr<Hittable>> objects;
 };
