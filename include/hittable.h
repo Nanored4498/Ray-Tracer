@@ -27,6 +27,8 @@ public:
 	bool boundingBox(AABB& aabb) const override;
 
 	void add(Hittable *object) { objects.emplace_back(object); }
+	std::vector<std::shared_ptr<Hittable>>::iterator begin() { return objects.begin(); }
+	std::vector<std::shared_ptr<Hittable>>::iterator end() { return objects.end(); }
 
 private:
 	std::vector<std::shared_ptr<Hittable>> objects;

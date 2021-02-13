@@ -9,6 +9,7 @@ public:
 
 	static double real() { return real_unif(re); }
 	static double realRange(double a, double b) { return a + (b-a) * real_unif(re); }
+	static int intRange(int a, int b) { return std::uniform_int_distribution<int>(a, b)(re); }
 
 private:
 	inline static std::default_random_engine re;
