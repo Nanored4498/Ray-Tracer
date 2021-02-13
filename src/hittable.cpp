@@ -11,16 +11,8 @@ bool HittableList::hit(const Ray &ray, double tMax, HitRecord &record) const {
 	return any_hit;
 }
 
-bool HittableList::boundingBox(AABB& aabb) const {
-	if(objects.empty()) {
-		aabb = AABB();
-		return true;
-	}
-	objects[0]->boundingBox(aabb);
-	for(auto obj = objects.begin()+1; obj != objects.end(); ++obj) {
-		AABB tmpBox;
-		if(!(*obj)->boundingBox(tmpBox)) return false;
-		aabb.surround(tmpBox);
-	}
-	return true;
+void HittableList::add(Hittable *object) {
+	if(objects.empty()) box = object->boundingBox();
+	else box.surround(object->boundingBox());
+	objects.emplace_back(object);
 }

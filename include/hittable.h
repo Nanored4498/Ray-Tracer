@@ -16,7 +16,12 @@ public:
 	virtual ~Hittable() {}
 
 	virtual bool hit(const Ray &ray, double tMax, HitRecord &record) const = 0;
-	virtual bool boundingBox(AABB& aabb) const = 0;
+	
+	bool hitBox(const Ray &ray, double tMax, double &t) { return box.hit(ray, tMax, t); }
+	const AABB& boundingBox() { return box; }
+
+protected:
+	AABB box;
 };
 
 class HittableList : public Hittable {
@@ -24,9 +29,9 @@ public:
 	~HittableList() {}
 
 	bool hit(const Ray &ray, double tMax, HitRecord &record) const override;
-	bool boundingBox(AABB& aabb) const override;
 
-	void add(Hittable *object) { objects.emplace_back(object); }
+	void add(Hittable *object);
+
 	std::vector<std::shared_ptr<Hittable>>::iterator begin() { return objects.begin(); }
 	std::vector<std::shared_ptr<Hittable>>::iterator end() { return objects.end(); }
 

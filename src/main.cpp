@@ -10,7 +10,7 @@ const double fov = 30.;
 const double aperture = 0.09;
 const double aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
-const int sqrtSamplesPerPixel = 5;
+const int sqrtSamplesPerPixel = 7;
 const int maxDepth = 60;
 
 const double fogDensity = 3.e-2;
@@ -77,7 +77,7 @@ int main() {
 	Camera camera(camPos, -camPos, Vec3(0., 1., 0.), fov, aspectRatio, aperture, 10.);
 
 	u_char *img = new u_char[imgWidth * imgHeight * 3];
-	#pragma omp parallel for
+	#pragma omp parallel for schedule(dynamic, 1)
 	for(int i = 0; i < imgWidth; ++i) {
 		for(int j = 0; j < imgHeight; ++j) {
 			Color col(0., 0., 0.);
