@@ -99,7 +99,12 @@ int main() {
 	auto end = std::chrono::high_resolution_clock::now();
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	std::cout << "Time: " << time << " (ms)\n";
+	#ifdef SPHERE_STATS
 	std::cout << "Sphere intersections: " << Sphere::getNbIntersections() << "\n";
+	#endif
+	#ifdef BVH_STATS
+	std::cout << "BVHNode intersections: " << BVHNode::getNbIntersections() << "\n";
+	#endif
 
 	stbi_write_png("out.png", imgWidth, imgHeight, 3, img, 0);
 

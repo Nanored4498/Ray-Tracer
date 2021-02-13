@@ -2,6 +2,8 @@
 
 #include "hittable.h"
 
+// #define BVH_STATS
+
 class BVHNode : public Hittable {
 public:
 	BVHNode(HittableList &list): BVHNode(list.begin(), list.end()) {}
@@ -14,7 +16,11 @@ public:
 		return true;
 	}
 
+	static unsigned long long getNbIntersections() { return nbIntersections; }
+
 private:
+	inline static unsigned long long nbIntersections = 0;
+
 	std::shared_ptr<Hittable> left, right;
 	AABB box;
 };

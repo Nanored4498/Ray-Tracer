@@ -1,7 +1,9 @@
 #include "sphere.h"
 
 bool Sphere::hit(const Ray &ray, double tMax, HitRecord &record) const {
+	#ifdef SPHERE_STATS
 	++ nbIntersections;
+	#endif
 	Vec3 oc = center - ray.origin();
 	double ocd = dot(oc, ray.direction());
 	double delta = ocd*ocd + radius*radius - oc.norm2();

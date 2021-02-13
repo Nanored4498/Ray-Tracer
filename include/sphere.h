@@ -2,6 +2,8 @@
 
 #include "hittable.h"
 
+// #define SPHERE_STATS
+
 class Sphere : public Hittable {
 public:
 	Sphere(const Vec3 &center, double radius, Material *material, bool inverted=false):

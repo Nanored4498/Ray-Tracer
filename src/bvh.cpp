@@ -34,6 +34,9 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hittable>>::iterator start, std::ve
 }
 
 bool BVHNode::hit(const Ray &ray, double tMax, HitRecord &record) const {
+	#ifdef BVH_STATS
+	++ nbIntersections;
+	#endif
 	if(!box.hit(ray, tMax)) return false;
 	if(left->hit(ray, tMax, record)) {
 		right->hit(ray, record.t, record);
