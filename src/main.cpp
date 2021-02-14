@@ -11,10 +11,10 @@ const Scalar fov = 30.;
 const Scalar aperture = 0.09;
 const Scalar aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
-const int sqrtSamplesPerPixel = 7;
+const int sqrtSamplesPerPixel = 18;
 const int maxDepth = 60;
 
-const Scalar fogDensity = 3.e-2;
+const Scalar fogDensity = 2.5e-2;
 const Scalar fogHeight = 8.;
 const Scalar fogRadius = 24.;
 
@@ -50,10 +50,12 @@ Hittable* randomScene() {
 	for(int x = -10; x <= 9; ++x) {
 		for(int z = -8; z <= 4; ++z) {
 			Vec3 center(x + .75 * Random::real(), .2, z + .75 * Random::real());
-			// if((center - Vec3(4., .9, 0.)).norm2() < 1.21) continue;
-			if((center - Vec3(5.2, .9, 0.)).norm2() < 1.41) continue;
+			if((center - Vec3(3.75, .2, 1.)).norm2() < 1.) continue;
+			/*
+			if((center - Vec3(4., .9, 0.)).norm2() < 1.21) continue;
 			if((center - Vec3(0., .95, 0.)).norm2() < 1.33) continue;
 			if((center - Vec3(-4., 1., 0.)).norm2() < 1.44) continue;
+			*/
 			Material *mat;
 			Scalar rand_mat = Random::real();
 			if(rand_mat < .7) mat = new Lambertian(Color::random() * Color::random());
@@ -72,7 +74,7 @@ Hittable* randomScene() {
 	*/
 
 	// Bunny
-	loadOBJ("../meshes/bunny.obj", world, new Metal(Vec3(.5, .35, .1), .1));
+	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.));
 
 	return new BVHNode(world);
 }

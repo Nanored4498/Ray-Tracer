@@ -82,9 +82,13 @@ public:
 	inline Scalar norm() const { return std::sqrt(X[0]*X[0] + X[1]*X[1] + X[2]*X[2]); }
 	inline Scalar norm2() const { return X[0]*X[0] + X[1]*X[1] + X[2]*X[2]; }
 	inline Vec3 normalized() const { return *this / std::sqrt(X[0]*X[0] + X[1]*X[1] + X[2]*X[2]); }
+
+	inline Scalar minCoeff() const { return std::min(X[0], std::min(X[1], X[2])); }
+	inline Scalar maxCoeff() const { return std::max(X[0], std::max(X[1], X[2])); }
 };
 
 inline Vec3 operator*(Scalar scalar, const Vec3 &v) { return Vec3(scalar*v.x(), scalar*v.y(), scalar*v.z()); }
+inline Vec3 operator/(Scalar scalar, const Vec3 &v) { return Vec3(scalar/v.x(), scalar/v.y(), scalar/v.z()); }
 
 inline Scalar dot(const Vec3 &u, const Vec3 &v) { return u.x()*v.x() + u.y()*v.y() + u.z()*v.z(); }
 inline Vec3 cross(const Vec3 &u, const Vec3 &v) { return Vec3(u.y()*v.z()-u.z()*v.y(), u.z()*v.x()-u.x()*v.z(), u.x()*v.y()-u.y()*v.x()); }

@@ -2,8 +2,9 @@
 
 #include <fstream>
 
-Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material):
-	material(material) {
+Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface):
+	material(material),
+	biface(biface) {
 	box = AABB(min(a, min(b, c)), max(a, max(b, c)));
 	
 	Vec3 e1 = b - a, e2 = c - a;
@@ -44,7 +45,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		Scalar yg = invT[3] * py + invT[4] * pz + invT[5];
 		if(yg >= 0. && xg + yg <= 1.) {
 			record.pos = Vec3(ray.origin().x() + t * ray.direction().x(), py, pz);
-			record.normal = normal;
+			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
 			record.material = &(*material);
 			record.t = t;
 			return true;
@@ -59,7 +60,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		Scalar yg = invT[4] * px + invT[3] * pz + invT[5];
 		if(yg >= 0. && xg + yg <= 1.) {
 			record.pos = Vec3(px, ray.origin().y() + t * ray.direction().y(), pz);
-			record.normal = normal;
+			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
 			record.material = &(*material);
 			record.t = t;
 			return true;
@@ -74,7 +75,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		Scalar yg = invT[3] * px + invT[4] * py + invT[5];
 		if(yg >= 0. && xg + yg <= 1.) {
 			record.pos = Vec3(px, py, ray.origin().z() + t * ray.direction().z());
-			record.normal = normal;
+			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
 			record.material = &(*material);
 			record.t = t;
 			return true;
@@ -83,11 +84,12 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	throw std::runtime_error("Non reachable code in Triangle hit!");
 }
 
-void loadOBJ(const std::string &fileName, HittableList &list, const Material *material) {
+void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos) {
 	std::ifstream ifs(fileName);
 	std::string word;
 	std::vector<Vec3> vertices;
-	std::shared_ptr<const Material> sharedMat(material);
+	std::vector<std::tuple<uint, uint, uint>> faces;
+	AABB box;
 	while(ifs >> word) {
 		if(word[0] == '#') {
 			std::getline(ifs, word);
@@ -97,16 +99,30 @@ void loadOBJ(const std::string &fileName, HittableList &list, const Material *ma
 		if(word[0] == 'v') {
 			vertices.emplace_back();
 			ifs >> vertices.back().x() >> vertices.back().y() >> vertices.back().z();
-			std::swap(vertices.back().x(), vertices.back().z());
-			vertices.back().z() *= -1.;
-			vertices.back() *= 12.;
-			vertices.back() += Vec3(4., -.42, .8);
+			if(vertices.size() == 1) box = AABB(vertices.back(), vertices.back());
+			else box.surround(AABB(vertices.back(), vertices.back()));
 		} else if(word[0] == 'f') {
-			uint i, j, k;
-			ifs >> i >> j >> k;
-			// list.add(new Triangle(vertices[i-1], vertices[j-1], vertices[k-1], sharedMat));
-			list.add(new Triangle(vertices[i-1], vertices[j-1], vertices[k-1], std::make_shared<Metal>(Vec3(.5+.07*Random::real(), .35+.06*Random::real(), .05*(1. + Random::real())), .11*Random::real())));
+			faces.emplace_back();
+			ifs >> std::get<0>(faces.back()) >> std::get<1>(faces.back()) >> std::get<2>(faces.back());
 		} else throw std::runtime_error("Unknown word " + word + " in OBJ file!");
 	}
 	ifs.close();
+
+	Vec3 boxMid = .5 * (box.min() + box.max());
+	double scale0 = 1. / (box.max() - box.min()).maxCoeff();
+	Vec3 z = rotAxis.normalized();
+	Vec3 x = Vec3::random();
+	x = (x - dot(x, z) * z).normalized();
+	Vec3 y = cross(z, x);
+	angle *= M_PI / 180.;
+	Scalar co = std::cos(angle), si = std::sin(angle);
+	for(Vec3 &v : vertices) {
+		v = (v - boxMid) * scale0;
+		Scalar vx = dot(v, x), vy = dot(v, y);
+		v = pos + scale * (dot(v, z) * z + (vx * co - vy * si) * x + (vx * si + vy * co) * y);
+	}
+
+	for(const auto &[i, j, k] : faces)
+		// list.add(new Triangle(vertices[i-1], vertices[j-1], vertices[k-1], sharedMat));
+		list.add(new Triangle(vertices[i-1], vertices[j-1], vertices[k-1], std::make_shared<Metal>(Vec3(.52+.04*Random::real(), .35+.03*Random::real(), .05+.01*Random::real()), .08*Random::real())));
 }
