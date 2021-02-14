@@ -1,8 +1,8 @@
 #include "hittable.h"
 
-bool HittableList::hit(const Ray &ray, double tMax, HitRecord &record) const {
-	double any_hit = false;
-	for(const std::shared_ptr<Hittable> &object : objects) {
+bool HittableList::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
+	Scalar any_hit = false;
+	for(const std::shared_ptr<const Hittable> &object : objects) {
 		if(object->hit(ray, tMax, record)) {
 			tMax = record.t;
 			any_hit = true;
@@ -11,7 +11,7 @@ bool HittableList::hit(const Ray &ray, double tMax, HitRecord &record) const {
 	return any_hit;
 }
 
-void HittableList::add(Hittable *object) {
+void HittableList::add(const Hittable *object) {
 	if(objects.empty()) box = object->boundingBox();
 	else box.surround(object->boundingBox());
 	objects.emplace_back(object);

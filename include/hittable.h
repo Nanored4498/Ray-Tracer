@@ -8,17 +8,17 @@
 struct HitRecord {
 	Vec3 pos, normal;
 	const Material *material;
-	double t;
+	Scalar t;
 };
 
 class Hittable {
 public:
 	virtual ~Hittable() {}
 
-	virtual bool hit(const Ray &ray, double tMax, HitRecord &record) const = 0;
+	virtual bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const = 0;
 	
-	bool hitBox(const Ray &ray, double tMax, double &t) { return box.hit(ray, tMax, t); }
-	const AABB& boundingBox() { return box; }
+	bool hitBox(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hit(ray, tMax, t); }
+	const AABB& boundingBox() const { return box; }
 
 protected:
 	AABB box;
@@ -28,13 +28,13 @@ class HittableList : public Hittable {
 public:
 	~HittableList() {}
 
-	bool hit(const Ray &ray, double tMax, HitRecord &record) const override;
+	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
-	void add(Hittable *object);
+	void add(const Hittable *object);
 
-	std::vector<std::shared_ptr<Hittable>>::iterator begin() { return objects.begin(); }
-	std::vector<std::shared_ptr<Hittable>>::iterator end() { return objects.end(); }
+	std::vector<std::shared_ptr<const Hittable>>::iterator begin() { return objects.begin(); }
+	std::vector<std::shared_ptr<const Hittable>>::iterator end() { return objects.end(); }
 
 private:
-	std::vector<std::shared_ptr<Hittable>> objects;
+	std::vector<std::shared_ptr<const Hittable>> objects;
 };

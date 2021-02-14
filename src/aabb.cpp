@@ -1,21 +1,40 @@
 #include "aabb.h"
 
-bool AABB::hit(const Ray &ray, double tMax, double &t) const {
-	t = 1e-5;
-	for(int i = 0; i < 3; ++i) {
-		double invD = 1. / ray.direction()[i], t0, t1;
-		if(invD < 0.) {
-			t0 = invD * (maxi[i] - ray.origin()[i]);
-			t1 = invD * (mini[i] - ray.origin()[i]);
-		} else {
-			t0 = invD * (mini[i] - ray.origin()[i]);
-			t1 = invD * (maxi[i] - ray.origin()[i]);
-		}
-		if(t0 > t) t = t0;
-		if(t1 < tMax) tMax = t1;
-		if(tMax <= t) return false;
+bool AABB::hit(const Ray &ray, Scalar tMax, Scalar &t) const {
+	t = EPS;
+	Scalar invD = 1. / ray.direction().x(), t0, t1;
+	if(invD < 0.) {
+		t0 = invD * (maxi.x() - ray.origin().x());
+		t1 = invD * (mini.x() - ray.origin().x());
+	} else {
+		t0 = invD * (mini.x() - ray.origin().x());
+		t1 = invD * (maxi.x() - ray.origin().x());
 	}
-	return true;
+	if(t0 > t) t = t0;
+	if(t1 < tMax) tMax = t1;
+	if(tMax <= t) return false;
+	invD = 1. / ray.direction().y();
+	if(invD < 0.) {
+		t0 = invD * (maxi.y() - ray.origin().y());
+		t1 = invD * (mini.y() - ray.origin().y());
+	} else {
+		t0 = invD * (mini.y() - ray.origin().y());
+		t1 = invD * (maxi.y() - ray.origin().y());
+	}
+	if(t0 > t) t = t0;
+	if(t1 < tMax) tMax = t1;
+	if(tMax <= t) return false;
+	invD = 1. / ray.direction().z();
+	if(invD < 0.) {
+		t0 = invD * (maxi.z() - ray.origin().z());
+		t1 = invD * (mini.z() - ray.origin().z());
+	} else {
+		t0 = invD * (mini.z() - ray.origin().z());
+		t1 = invD * (maxi.z() - ray.origin().z());
+	}
+	if(t0 > t) t = t0;
+	if(t1 < tMax) tMax = t1;
+	return t < tMax;
 }
 
 

@@ -2,38 +2,39 @@
 #include "sphere.h"
 #include "camera.h"
 #include "bvh.h"
+#include "triangle.h"
 #include "stb_image_write.h"
 
 #include <iostream>
 
-const double fov = 30.;
-const double aperture = 0.09;
-const double aspectRatio = 16. / 9.;
+const Scalar fov = 30.;
+const Scalar aperture = 0.09;
+const Scalar aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
 const int sqrtSamplesPerPixel = 7;
 const int maxDepth = 60;
 
-const double fogDensity = 3.e-2;
-const double fogHeight = 8.;
-const double fogRadius = 24.;
+const Scalar fogDensity = 3.e-2;
+const Scalar fogHeight = 8.;
+const Scalar fogRadius = 24.;
 
 const int imgHeight = imgWidth / aspectRatio;
 
 Color rayColor(const Ray &ray, const Hittable *world, int depth) {
 	if(depth > 0) {
 		HitRecord record;
-		if(world->hit(ray, std::numeric_limits<double>::max(), record)) {
+		if(world->hit(ray, std::numeric_limits<Scalar>::max(), record)) {
 			Color attenuation;
 			Ray scattered;
 			if(record.material->scatter(ray, record, attenuation, scattered)) {
-				double fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y() + scattered.origin().y())/fogHeight));
+				Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y() + scattered.origin().y())/fogHeight));
 				return fogCoeff * attenuation * rayColor(scattered, world, depth-1);
 			} else return Color(0., 0., 0.);
 		}
 		// background color
-		double t = .5 * (ray.direction().y() + 1.);
-		double rayFogDist = ray.direction().y() < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y()) / ray.direction().y());
-		double fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y()/fogHeight));
+		Scalar t = .5 * (ray.direction().y() + 1.);
+		Scalar rayFogDist = ray.direction().y() < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y()) / ray.direction().y());
+		Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y()/fogHeight));
 		return fogCoeff * 1.2 * Color(1. - .5*t, 1. - .3*t, 1.);
 	}
 	return Color(0., 0., 0.);
@@ -49,11 +50,12 @@ Hittable* randomScene() {
 	for(int x = -10; x <= 9; ++x) {
 		for(int z = -8; z <= 4; ++z) {
 			Vec3 center(x + .75 * Random::real(), .2, z + .75 * Random::real());
-			if((center - Vec3(4., .9, 0.)).norm2() < 1.21) continue;
+			// if((center - Vec3(4., .9, 0.)).norm2() < 1.21) continue;
+			if((center - Vec3(5.2, .9, 0.)).norm2() < 1.41) continue;
 			if((center - Vec3(0., .95, 0.)).norm2() < 1.33) continue;
 			if((center - Vec3(-4., 1., 0.)).norm2() < 1.44) continue;
 			Material *mat;
-			double rand_mat = Random::real();
+			Scalar rand_mat = Random::real();
 			if(rand_mat < .7) mat = new Lambertian(Color::random() * Color::random());
 			else if(rand_mat < .95) mat = new Metal(Color::randomRange(.5, 1.), Random::realRange(0., 0.5));
 			else mat = new Dielectric(1.5);
@@ -61,10 +63,17 @@ Hittable* randomScene() {
 		}
 	}
 
+	/*
+	// big spheres
 	world.add(new Sphere(Vec3(-4., 1., 0.), 1., new Lambertian(Vec3(.4, .2, .1))));
 	world.add(new Sphere(Vec3(0., .95, 0.), .95, new Dielectric(1.5)));
 	world.add(new Sphere(Vec3(0., .95, 0.), .75, new Dielectric(1.5), true));
 	world.add(new Sphere(Vec3(4., .9, 0.), .9, new Metal(Vec3(.7, .6, .5), 0.)));
+	*/
+
+	// Bunny
+	loadOBJ("../meshes/bunny.obj", world, new Metal(Vec3(.5, .35, .1), .1));
+
 	return new BVHNode(world);
 }
 
@@ -83,8 +92,8 @@ int main() {
 			Color col(0., 0., 0.);
 			for(int sx = 0; sx < sqrtSamplesPerPixel; ++sx) {
 				for(int sy = 0; sy < sqrtSamplesPerPixel; ++sy) {
-					double x = (i + (sx + Random::real()) / sqrtSamplesPerPixel) / imgWidth;
-					double y = (j + (sy + Random::real()) / sqrtSamplesPerPixel) / imgHeight;
+					Scalar x = (i + (sx + Random::real()) / sqrtSamplesPerPixel) / imgWidth;
+					Scalar y = (j + (sy + Random::real()) / sqrtSamplesPerPixel) / imgHeight;
 					col += rayColor(camera.getRay(x, y), world, maxDepth);
 				}
 			}

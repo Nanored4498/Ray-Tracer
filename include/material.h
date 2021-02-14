@@ -24,24 +24,24 @@ private:
 
 class Metal : public Material {
 public:
-	Metal(const Color &albedo, double fuzz): albedo(albedo), fuzz(fuzz) {}
+	Metal(const Color &albedo, Scalar fuzz): albedo(albedo), fuzz(fuzz) {}
 	~Metal() {}
 
 	bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const override;
 
 private:
 	Color albedo;
-	double fuzz;
+	Scalar fuzz;
 };
 
 class Dielectric : public Material {
 public:
-	Dielectric(double reflectiveIndex): reflectiveIndex(reflectiveIndex) {}
+	Dielectric(Scalar reflectiveIndex): reflectiveIndex(reflectiveIndex) {}
 	~Dielectric() {}
 
 	bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const override;
 
 private:
-	double reflectiveIndex;
+	Scalar reflectiveIndex;
 };
 

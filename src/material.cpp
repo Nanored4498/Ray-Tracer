@@ -14,13 +14,13 @@ bool Metal::scatter(const Ray &ray, const HitRecord &record, Color &attenuation,
 
 bool Dielectric::scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const {
 	attenuation = Color(1., 1., 1.);
-	double cosTheta = - dot(ray.direction(), record.normal);
-	double sinTheta = std::sqrt(1. - cosTheta * cosTheta);
-   	double n1_n2 = cosTheta > 0. ? 1. / reflectiveIndex : reflectiveIndex;
+	Scalar cosTheta = - dot(ray.direction(), record.normal);
+	Scalar sinTheta = std::sqrt(1. - cosTheta * cosTheta);
+   	Scalar n1_n2 = cosTheta > 0. ? 1. / reflectiveIndex : reflectiveIndex;
     if(n1_n2 * sinTheta > 1.) {
         scattered = Ray(record.pos, ray.direction() + 2. * cosTheta * record.normal);
     } else {
-		double proba = (n1_n2 - 1.) / (n1_n2 + 1.);
+		Scalar proba = (n1_n2 - 1.) / (n1_n2 + 1.);
 		proba *= proba;
 		proba += (1. - proba) * std::pow(1. - std::abs(cosTheta), 5.);
 		if(Random::real() < proba) scattered = Ray(record.pos, ray.direction() + 2. * cosTheta * record.normal);
