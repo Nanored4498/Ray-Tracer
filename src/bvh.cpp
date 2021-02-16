@@ -2,19 +2,50 @@
 
 #include <algorithm>
 
-BVHNode::BVHNode(std::vector<std::shared_ptr<const Hittable>>::iterator start, std::vector<std::shared_ptr<const Hittable>>::iterator end) {
-	int axis = Random::intRange(0, 2);
-	auto comp = [axis](const std::shared_ptr<const Hittable> &a, const std::shared_ptr<const Hittable> &b) {
+BVHNode::BVHNode(std::vector<std::shared_ptr<const Hittable>>::iterator start, size_t nb) {
+	if(nb < 2) throw std::runtime_error("Not enougth hittables in BVHNode!");
+
+	uint axis;
+	auto comp = [&axis](const std::shared_ptr<const Hittable> &a, const std::shared_ptr<const Hittable> &b) {
 		return a->boundingBox().max()[axis] < b->boundingBox().max()[axis];
 	};
 
-	if(start + 2 > end) throw std::runtime_error("Not enougth hittables in BVHNode!");
-	std::sort(start, end, comp);
-	std::vector<std::shared_ptr<const Hittable>>::iterator mid = start + (end - start) / 2;
-	if(start+1==mid) left = *start;
-	else left = std::make_shared<BVHNode>(start, mid);
-	if(mid+1==end) right = *mid;
-	else right = std::make_shared<BVHNode>(mid, end);
+	uint bestAxis = 0;
+	uint bestSep = 1;
+	Scalar bestScore = std::numeric_limits<Scalar>::max();
+	std::vector<Scalar> surfaces(nb-1);
+	for(axis = 0; axis < 3; ++axis) {
+		std::sort(start, start+nb, comp);
+		uint i = 0;
+		box = (*start)->boundingBox();
+		while(true) {
+			surfaces[i] = box.surface();
+			if(++i < surfaces.size()) box.surround((*(start+i))->boundingBox());
+			else break;
+		}
+		i = nb-1;
+		box = (*(start+i))->boundingBox();
+		while(true) {
+			double score = box.surface() * (nb - i) + surfaces[i-1] * i;
+			if(score < bestScore) {
+				bestScore = score;
+				bestAxis = axis;
+				bestSep = i;
+			}
+			if(--i > 0) box.surround((*(start+i))->boundingBox());
+			else break;
+		}
+	}
+
+	if(bestAxis < 2) {
+		axis = bestAxis;
+		std::sort(start, start+nb, comp);
+	}
+
+	if(bestSep == 1) left = *start;
+	else left = std::make_shared<BVHNode>(start, bestSep);
+	if(bestSep+1 == nb) right = *(start + bestSep);
+	else right = std::make_shared<BVHNode>(start + bestSep, nb-bestSep);
 
 	box = left->boundingBox();
 	box.surround(right->boundingBox());

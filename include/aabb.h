@@ -12,6 +12,8 @@ public:
 	const Vec3& min() const { return mini; }
 	const Vec3& max() const { return maxi; }
 
+	inline Scalar surface() const { return (maxi.x() - mini.x()) * (maxi.y() + maxi.z() - mini.y() - mini.z()) + (maxi.y() - mini.y()) * (maxi.z() - mini.z()); }
+
 private:
 	Vec3 mini, maxi;
 };

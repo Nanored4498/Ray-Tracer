@@ -32,8 +32,9 @@ public:
 
 	void add(const Hittable *object);
 
-	std::vector<std::shared_ptr<const Hittable>>::iterator begin() { return objects.begin(); }
-	std::vector<std::shared_ptr<const Hittable>>::iterator end() { return objects.end(); }
+	inline std::vector<std::shared_ptr<const Hittable>>::iterator begin() { return objects.begin(); }
+	inline std::vector<std::shared_ptr<const Hittable>>::iterator end() { return objects.end(); }
+	inline size_t size() const { return objects.size(); }
 
 private:
 	std::vector<std::shared_ptr<const Hittable>> objects;

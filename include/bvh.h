@@ -4,8 +4,8 @@
 
 class BVHNode : public Hittable {
 public:
-	BVHNode(HittableList &list): BVHNode(list.begin(), list.end()) {}
-	BVHNode(std::vector<std::shared_ptr<const Hittable>>::iterator start, std::vector<std::shared_ptr<const Hittable>>::iterator end);
+	BVHNode(HittableList &list): BVHNode(list.begin(), list.size()) {}
+	BVHNode(std::vector<std::shared_ptr<const Hittable>>::iterator start, size_t nb);
 
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
