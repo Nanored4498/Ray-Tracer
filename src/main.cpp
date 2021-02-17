@@ -85,22 +85,25 @@ Hittable* randomScene() {
 
 Hittable *world;
 u_char *img;
+std::atomic<int> I = {0};
 
-void computeCol(int i) {
-	for(int j = 0; j < imgHeight; ++j) {
-		Color col(0., 0., 0.);
-		for(int sx = 0; sx < sqrtSamplesPerPixel; ++sx) {
-			for(int sy = 0; sy < sqrtSamplesPerPixel; ++sy) {
-				Scalar x = (i + (sx + Random::real()) / sqrtSamplesPerPixel) / imgWidth;
-				Scalar y = (j + (sy + Random::real()) / sqrtSamplesPerPixel) / imgHeight;
-				col += rayColor(camera.getRay(x, y), world, maxDepth);
+void work() {
+	for(int i = I++; i < imgWidth; i = I++) {
+		for(int j = 0; j < imgHeight; ++j) {
+			Color col(0., 0., 0.);
+			for(int sx = 0; sx < sqrtSamplesPerPixel; ++sx) {
+				for(int sy = 0; sy < sqrtSamplesPerPixel; ++sy) {
+					Scalar x = (i + (sx + Random::real()) / sqrtSamplesPerPixel) / imgWidth;
+					Scalar y = (j + (sy + Random::real()) / sqrtSamplesPerPixel) / imgHeight;
+					col += rayColor(camera.getRay(x, y), world, maxDepth);
+				}
 			}
+			col /= sqrtSamplesPerPixel * sqrtSamplesPerPixel;
+			int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
+			img[pix] = std::min(.999, std::max(0., std::pow(col.x(), 1./2.2))) * 256.;
+			img[pix+1] = std::min(.999, std::max(0., std::pow(col.y(), 1./2.2))) * 256.;
+			img[pix+2] = std::min(.999, std::max(0., std::pow(col.z(), 1./2.2))) * 256.;
 		}
-		col /= sqrtSamplesPerPixel * sqrtSamplesPerPixel;
-		int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
-		img[pix] = std::min(.999, std::max(0., std::pow(col.x(), 1./2.2))) * 256.;
-		img[pix+1] = std::min(.999, std::max(0., std::pow(col.y(), 1./2.2))) * 256.;
-		img[pix+2] = std::min(.999, std::max(0., std::pow(col.z(), 1./2.2))) * 256.;
 	}
 	Stats::aggregateLocalStats();
 }
@@ -112,13 +115,11 @@ int main() {
 
 	auto start = std::chrono::high_resolution_clock::now();
 
-	int T = std::min((int) std::thread::hardware_concurrency(), imgWidth);
+	int T = (int) std::thread::hardware_concurrency() - 1;
 	std::vector<std::thread> threads(T);
-	for(int i = 0; i < T; ++ i) threads[i] = std::thread(computeCol, i);
-	for(int i = 0; i < imgWidth; ++i) {
-		threads[i%T].join();
-		if(i+T < imgWidth) threads[i%T] = std::thread(computeCol, i+T);
-	}
+	for(int i = 0; i < T; ++i) threads[i] = std::thread(work);
+	work();
+	for(int i = 0; i < T; ++i) threads[i].join();
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
