@@ -27,6 +27,25 @@ public:
 		if((std::sin(8.*p.x()) < 0.) ^ (std::sin(8.*p.y()) < 0.) ^ (std::sin(8.*p.z()) < 0.)) return odd;
 		else return even;
 	}
-public:
+
+private:
 	Color even, odd;
+};
+
+class NoiseTexture : public Texture {
+public:
+	NoiseTexture(double scale);
+	~NoiseTexture() {
+		delete[] vecs;
+		delete[] perms[0];
+		delete[] perms[1];
+	}
+
+	Color value(Scalar, Scalar, const Vec3 &p) const override;
+
+private:
+	static const int nbVals = 1<<8;
+	Vec3 *vecs;
+	int *perms[2];
+	double scale;
 };

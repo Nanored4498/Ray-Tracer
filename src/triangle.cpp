@@ -82,12 +82,6 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	}
 }
 
-Vec2 Triangle::getUV(const Vec3 &pos, const Vec3 &) const {
-	Scalar x = pos[(1+fixedColumn)%3], y = pos[(2+fixedColumn)%3];
-	return Vec2(invT[0] * x + invT[1] * y + invT[2],
-				invT[3] * x + invT[4] * y + invT[5]);
-}
-
 void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos) {
 	std::ifstream ifs(fileName);
 	std::string word;

@@ -18,7 +18,11 @@ public:
 		return biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
 	}
 
-	Vec2 getUV(const Vec3 &pos, const Vec3 &normal) const override;
+	inline Vec2 getUV(const Vec3 &pos, const Vec3 &) const override {
+		Scalar x = pos[(1+fixedColumn)%3], y = pos[(2+fixedColumn)%3];
+		return Vec2(invT[0] * x + invT[1] * y + invT[2],
+					invT[3] * x + invT[4] * y + invT[5]);
+	}
 
 private:
 	Vec3 normal;

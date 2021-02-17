@@ -13,7 +13,7 @@ const Scalar fov = 30.;
 const Scalar aperture = 0.09;
 const Scalar aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
-const int sqrtSamplesPerPixel = 8;
+const int sqrtSamplesPerPixel = 18;
 const int maxDepth = 60;
 
 const Scalar fogDensity = 2.5e-2;
@@ -49,7 +49,8 @@ Hittable* randomScene() {
 
 	// Ground
 	world.add(new Sphere(Vec3(0., -5000., 0.), 5000.,
-				new Lambertian(new CheckerTexture(Color(.6, .6, .6), Color(1., .3, .1)))));
+				// new Lambertian(new CheckerTexture(Color(.6, .6, .6), Color(1., .3, .1)))));
+				new Lambertian(new NoiseTexture(4.))));
 
 	// Grid of spheres
 	for(int x = -10; x <= 9; ++x) {

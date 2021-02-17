@@ -3,7 +3,6 @@
 #include "stats.h"
 #include <algorithm>
 #include <queue>
-#include <iostream>
 
 std::atomic<unsigned long long> Stats::nodeRayTest = {0uLL};
 thread_local unsigned long long Stats::localNodeRayTest = 0uLL;

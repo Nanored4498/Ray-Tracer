@@ -60,6 +60,12 @@ public:
 		Scalar r = std::cbrt(Random::real());
 		return Vec3(r * sinTheta * std::cos(phi), r * sinTheta * std::sin(phi), r * cosTheta);
 	}
+	static Vec3 randomSphere() {
+		Scalar phi = 2. * M_PI * Random::real();
+		Scalar cosTheta = 2. * Random::real() - 1.;
+		Scalar sinTheta = std::sqrt(1. - cosTheta*cosTheta);
+		return Vec3(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
+	}
 
 	inline Vec3 operator-() const { return Vec3(-X[0], -X[1], -X[2]); }
 
