@@ -87,47 +87,27 @@ struct qComp {
 };
 
 bool BVHTree::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
-	// return root->hit(ray, tMax, record);
 	Ray rayInv(ray.origin(), 1. / ray.direction());
 	bool anyHit = false;
 	std::priority_queue<QElement, std::vector<QElement>, qComp> Q;
-	double t;
-	if(root->left->hitBoxInv(rayInv, tMax, t)) Q.emplace(t, root->left.get());
-	if(root->right->hitBoxInv(rayInv, tMax, t)) Q.emplace(t, root->right.get());
+	Q.emplace(EPS, root.get());
 	while(!Q.empty()) {
 		if(Q.top().first >= tMax) break;
 		const Hittable* h = Q.top().second;
 		Q.pop();
-		double t0 = Q.empty() ? std::numeric_limits<Scalar>::max() : Q.top().first;
-		// while(h->isNode()) {
-		// 	#ifdef BVH_STATS
-		// 	++ BVHNode::local_nbIntersections;
-		// 	#endif
-		// 	const BVHNode *node = (const BVHNode*) h;
-		// 	if(node->left->hitBoxInv(rayInv, tMax, t)) {
-		// 		double t2;
-		// 		if(node->right->hitBoxInv(rayInv, tMax, t2)) {
-		// 			if(t < t2) {
-		// 				h = node->left.get();
-		// 				Q.emplace(t2, node->right.get());
-		// 			} else {
-		// 				h = node->right.get();
-		// 				Q.emplace(t, node->left.get());
-		// 			}
-		// 		} else h = node->left.get();
-		// 	} else h = node->right.get();
-		// }
-
+		double t0 = Q.empty() ? std::numeric_limits<Scalar>::max() : Q.top().first + EPS;
+		double t;
 		while(h->isNode()) {
 			UPDATE_NODE_STATS
-			const BVHNode *node = (const BVHNode*) h;
+			const BVHNode *node = static_cast<const BVHNode*>(h);
 			if(node->left->hitBoxInv(rayInv, tMax, t)) {
 				double t2;
 				if(node->right->hitBoxInv(rayInv, tMax, t2)) {
 					if(t < t2) {
 						Q.emplace(t2, node->right.get());
-						if(t <= t0) {
+						if(t < t0) {
 							h = node->left.get();
+							t2 += EPS;
 							if(t2 < t0) t0 = t2;
 						} else {
 							Q.emplace(t, node->left.get());
@@ -135,37 +115,29 @@ bool BVHTree::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 						}
 					} else {
 						Q.emplace(t, node->left.get());
-						if(t2 <= t0) {
+						if(t2 < t0) {
 							h = node->right.get();
+							t += EPS;
 							if(t < t0) t0 = t;
 						} else {
 							Q.emplace(t2, node->right.get());
 							break;
 						}
 					}
+				} else if(t < t0) {
+					h = node->left.get();
 				} else {
-					if(t <= t0) h = node->left.get();
-					else {
-						Q.emplace(t, node->left.get());
-						break;
-					}
+					Q.emplace(t, node->left.get());
+					break;
 				}
-			} else {
-				if(node->right->hitBoxInv(rayInv, tMax, t)) {
-					if(t <= t0) h = node->right.get();
-					else {
-						Q.emplace(t, node->right.get());
-						break;
-					}
-				} else break;
-
-				// if(node->right->isNode()) {
-				// 	node = (const BVHNode*) node->right.get();
-				// 	if(node->left->hitBoxInv(rayInv, tMax, t)) Q.emplace(t, node->left.get());
-				// 	if(node->right->hitBoxInv(rayInv, tMax, t)) Q.emplace(t, node->right.get());
-				// } else h = node->right.get();
-				// break;
-			}
+			} else if(Stats::localHitBoxTest&3) h = node->right.get();
+			else if(node->right->hitBoxInv(rayInv, tMax, t)) {
+				if(t < t0) h = node->right.get();
+				else {
+					Q.emplace(t, node->right.get());
+					break;
+				}
+			} else break;
 		}
 
 		if(!h->isNode() && h->hit(ray, tMax, record)) {

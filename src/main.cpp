@@ -13,7 +13,7 @@ const Scalar fov = 30.;
 const Scalar aperture = 0.09;
 const Scalar aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
-const int sqrtSamplesPerPixel = 6;
+const int sqrtSamplesPerPixel = 8;
 const int maxDepth = 60;
 
 const Scalar fogDensity = 2.5e-2;
@@ -80,7 +80,8 @@ Hittable* randomScene() {
 	// Bunny
 	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.));
 
-	return new BVHTree(world);
+	// return new BVHTree(world);
+	return new BVHNode(world);
 }
 
 Hittable *world;
@@ -128,6 +129,7 @@ int main() {
 	std::cout << "Sphere tests: " << Stats::sphereRayTest << "\n";
 	std::cout << "Triangle tests: " << Stats::triangleRayTest << "\n";
 	std::cout << "Node tests: " << Stats::nodeRayTest << "\n";
+	std::cout << "HitBox tests: " << Stats::hitBoxTest << "\n";
 	#endif
 
 	stbi_write_png("out.png", imgWidth, imgHeight, 3, img, 0);

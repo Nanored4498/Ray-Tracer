@@ -1,6 +1,12 @@
 #include "aabb.h"
 
+#include "stats.h"
+
+std::atomic<unsigned long long> Stats::hitBoxTest = {0uLL};
+thread_local unsigned long long Stats::localHitBoxTest = 0uLL;
+
 bool AABB::hit(const Ray &ray, Scalar tMax, Scalar &t) const {
+	UPDATE_BOX_STATS
 	t = EPS;
 	Scalar invD = 1. / ray.direction().x(), t0, t1;
 	if(invD < 0.) {
@@ -38,6 +44,7 @@ bool AABB::hit(const Ray &ray, Scalar tMax, Scalar &t) const {
 }
 
 bool AABB::hitInv(const Ray &ray, Scalar tMax, Scalar &t) const {
+	UPDATE_BOX_STATS
 	t = EPS;
 	Scalar t0, t1;
 	if(ray.direction().x() < 0.) {
