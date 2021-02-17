@@ -9,10 +9,19 @@ public:
 
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
-	static unsigned long long getNbIntersections() { return nbIntersections; }
+	inline bool isNode() const override { return true; }
 
 private:
-	inline static unsigned long long nbIntersections = 0;
-
 	std::shared_ptr<const Hittable> left, right;
+	friend class BVHTree;
+};
+
+class BVHTree : public Hittable {
+public:
+	BVHTree(HittableList &list): root(new BVHNode(list)) { box = root->boundingBox(); }
+
+	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
+
+private:
+	std::shared_ptr<const BVHNode> root;
 };

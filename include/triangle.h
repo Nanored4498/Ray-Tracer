@@ -1,3 +1,5 @@
+#pragma once
+
 #include "hittable.h"
 
 class Triangle : public Hittable {

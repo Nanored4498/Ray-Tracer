@@ -17,11 +17,7 @@ public:
 	
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
-	static unsigned long long getNbIntersections() { return nbIntersections; }
-
 private:
-	inline static unsigned long long nbIntersections = 0;
-
 	Vec3 center;
 	Scalar radius;
 	std::shared_ptr<const Material> material;

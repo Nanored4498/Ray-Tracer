@@ -1,9 +1,12 @@
 #include "sphere.h"
 
+#include "stats.h"
+
+std::atomic<unsigned long long> Stats::sphereRayTest = {0uLL};
+thread_local unsigned long long Stats::localSphereRayTest = 0uLL;
+
 bool Sphere::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
-	#ifdef SPHERE_STATS
-	++ nbIntersections;
-	#endif
+	UPDATE_SPHERE_STATS
 	Vec3 oc = center - ray.origin();
 	Scalar ocd = dot(oc, ray.direction());
 	Scalar delta = ocd*ocd + radius*radius - oc.norm2();
@@ -17,7 +20,7 @@ bool Sphere::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(t < tMax) {
 			record.pos = ray.at(t);
 			record.normal = (inverted ? center - record.pos : record.pos - center) / radius;
-			record.material = &(*material);
+			record.material = material.get();
 			record.t = t;
 			return true;
 		}

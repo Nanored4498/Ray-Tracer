@@ -4,20 +4,24 @@
 #include "bvh.h"
 #include "triangle.h"
 #include "stb_image_write.h"
+#include "stats.h"
 
 #include <iostream>
+#include <thread>
 
 const Scalar fov = 30.;
 const Scalar aperture = 0.09;
 const Scalar aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
-const int sqrtSamplesPerPixel = 18;
+const int sqrtSamplesPerPixel = 6;
 const int maxDepth = 60;
 
 const Scalar fogDensity = 2.5e-2;
 const Scalar fogHeight = 8.;
 const Scalar fogRadius = 24.;
 
+const Vec3 camPos(13.6, 2., 3.6);
+const Camera camera(camPos, -camPos, Vec3(0., 1., 0.), fov, aspectRatio, aperture, 10.);
 const int imgHeight = imgWidth / aspectRatio;
 
 Color rayColor(const Ray &ray, const Hittable *world, int depth) {
@@ -49,7 +53,7 @@ Hittable* randomScene() {
 	// Grid of spheres
 	for(int x = -10; x <= 9; ++x) {
 		for(int z = -8; z <= 4; ++z) {
-			Vec3 center(x + .75 * Random::real(), .2, z + .75 * Random::real());
+			Vec3 center(x + .66 * Random::real(), .2, z + .66 * Random::real());
 			if((center - Vec3(3.75, .2, 1.)).norm2() < 1.) continue;
 			/*
 			if((center - Vec3(4., .9, 0.)).norm2() < 1.21) continue;
@@ -76,50 +80,59 @@ Hittable* randomScene() {
 	// Bunny
 	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.));
 
-	return new BVHNode(world);
+	return new BVHTree(world);
+}
+
+Hittable *world;
+u_char *img;
+
+void computeCol(int i) {
+	for(int j = 0; j < imgHeight; ++j) {
+		Color col(0., 0., 0.);
+		for(int sx = 0; sx < sqrtSamplesPerPixel; ++sx) {
+			for(int sy = 0; sy < sqrtSamplesPerPixel; ++sy) {
+				Scalar x = (i + (sx + Random::real()) / sqrtSamplesPerPixel) / imgWidth;
+				Scalar y = (j + (sy + Random::real()) / sqrtSamplesPerPixel) / imgHeight;
+				col += rayColor(camera.getRay(x, y), world, maxDepth);
+			}
+		}
+		col /= sqrtSamplesPerPixel * sqrtSamplesPerPixel;
+		int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
+		img[pix] = std::min(.999, std::max(0., std::pow(col.x(), 1./2.2))) * 256.;
+		img[pix+1] = std::min(.999, std::max(0., std::pow(col.y(), 1./2.2))) * 256.;
+		img[pix+2] = std::min(.999, std::max(0., std::pow(col.z(), 1./2.2))) * 256.;
+	}
+	Stats::aggregateLocalStats();
 }
 
 int main() {
-	auto start = std::chrono::high_resolution_clock::now();
 	Random::init();
-	Hittable *world = randomScene();
+	world = randomScene();
+	img = new u_char[imgWidth * imgHeight * 3];
 
-	Vec3 camPos(13.6, 2., 3.6);
-	Camera camera(camPos, -camPos, Vec3(0., 1., 0.), fov, aspectRatio, aperture, 10.);
+	auto start = std::chrono::high_resolution_clock::now();
 
-	u_char *img = new u_char[imgWidth * imgHeight * 3];
-	#pragma omp parallel for schedule(dynamic, 1)
+	int T = std::min((int) std::thread::hardware_concurrency(), imgWidth);
+	std::vector<std::thread> threads(T);
+	for(int i = 0; i < T; ++ i) threads[i] = std::thread(computeCol, i);
 	for(int i = 0; i < imgWidth; ++i) {
-		for(int j = 0; j < imgHeight; ++j) {
-			Color col(0., 0., 0.);
-			for(int sx = 0; sx < sqrtSamplesPerPixel; ++sx) {
-				for(int sy = 0; sy < sqrtSamplesPerPixel; ++sy) {
-					Scalar x = (i + (sx + Random::real()) / sqrtSamplesPerPixel) / imgWidth;
-					Scalar y = (j + (sy + Random::real()) / sqrtSamplesPerPixel) / imgHeight;
-					col += rayColor(camera.getRay(x, y), world, maxDepth);
-				}
-			}
-			col /= sqrtSamplesPerPixel * sqrtSamplesPerPixel;
-			int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
-			img[pix] = std::min(.999, std::max(0., std::pow(col.x(), 1./2.2))) * 256.;
-			img[pix+1] = std::min(.999, std::max(0., std::pow(col.y(), 1./2.2))) * 256.;
-			img[pix+2] = std::min(.999, std::max(0., std::pow(col.z(), 1./2.2))) * 256.;
-		}
+		threads[i%T].join();
+		if(i+T < imgWidth) threads[i%T] = std::thread(computeCol, i+T);
 	}
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	std::cout << "Time: " << time << " (ms)\n";
-	#ifdef SPHERE_STATS
-	std::cout << "Sphere intersections: " << Sphere::getNbIntersections() << "\n";
-	#endif
-	#ifdef BVH_STATS
-	std::cout << "BVHNode intersections: " << BVHNode::getNbIntersections() << "\n";
+	#ifdef STATS
+	std::cout << "Sphere tests: " << Stats::sphereRayTest << "\n";
+	std::cout << "Triangle tests: " << Stats::triangleRayTest << "\n";
+	std::cout << "Node tests: " << Stats::nodeRayTest << "\n";
 	#endif
 
 	stbi_write_png("out.png", imgWidth, imgHeight, 3, img, 0);
 
 	delete world;
+	delete[] img;
 
 	return 0;
 }

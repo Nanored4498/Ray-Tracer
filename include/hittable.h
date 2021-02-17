@@ -18,7 +18,10 @@ public:
 	virtual bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const = 0;
 	
 	bool hitBox(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hit(ray, tMax, t); }
+	bool hitBoxInv(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hitInv(ray, tMax, t); }
 	const AABB& boundingBox() const { return box; }
+
+	inline virtual bool isNode() const { return false; }
 
 protected:
 	AABB box;

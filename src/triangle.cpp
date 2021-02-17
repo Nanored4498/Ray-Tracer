@@ -1,6 +1,10 @@
 #include "triangle.h"
 
+#include "stats.h"
 #include <fstream>
+
+std::atomic<unsigned long long> Stats::triangleRayTest = {0uLL};
+thread_local unsigned long long Stats::localTriangleRayTest = 0uLL;
 
 Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface):
 	material(material),
@@ -35,6 +39,7 @@ Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<
 }
 
 bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
+	UPDATE_TRIANGLE_STATS
 	if(fixedColumn == 0) {
 		Scalar t = - (ray.origin().x() + invT[6] * ray.origin().y() + invT[7] * ray.origin().z() + invT[8])
 					/ (ray.direction().x() + invT[6] * ray.direction().y() + invT[7] * ray.direction().z());
@@ -46,7 +51,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(yg >= 0. && xg + yg <= 1.) {
 			record.pos = Vec3(ray.origin().x() + t * ray.direction().x(), py, pz);
 			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
-			record.material = &(*material);
+			record.material = material.get();
 			record.t = t;
 			return true;
 		} else return false;
@@ -61,7 +66,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(yg >= 0. && xg + yg <= 1.) {
 			record.pos = Vec3(px, ray.origin().y() + t * ray.direction().y(), pz);
 			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
-			record.material = &(*material);
+			record.material = material.get();
 			record.t = t;
 			return true;
 		} else return false;
@@ -76,7 +81,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(yg >= 0. && xg + yg <= 1.) {
 			record.pos = Vec3(px, py, ray.origin().z() + t * ray.direction().z());
 			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
-			record.material = &(*material);
+			record.material = material.get();
 			record.t = t;
 			return true;
 		} else return false;
