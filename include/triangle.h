@@ -10,6 +10,16 @@ public:
 	
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
+	inline bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const override {
+		return material->scatter(ray, record, attenuation, scattered);
+	}
+
+	inline Vec3 getNormal(const Vec3 &, const Ray &ray) const override {
+		return biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
+	}
+
+	Vec2 getUV(const Vec3 &pos, const Vec3 &normal) const override;
+
 private:
 	Vec3 normal;
 	std::shared_ptr<const Material> material;

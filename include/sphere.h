@@ -17,6 +17,19 @@ public:
 	
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
+	inline bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const override {
+		return material->scatter(ray, record, attenuation, scattered);
+	}
+
+	inline Vec3 getNormal(const Vec3 &pos, const Ray &) const override {
+		if(inverted) return (center - pos) / radius;
+		else return (pos - center) / radius;
+	}
+
+	inline Vec2 getUV(const Vec3 &pos, const Vec3 &normal) const {
+		return Vec2(.5 + std::atan2(-pos.z(), pos.x()) / (2.*M_PI), std::acos(-normal.y()) / M_PI);
+	}
+
 private:
 	Vec3 center;
 	Scalar radius;

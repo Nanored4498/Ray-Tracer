@@ -3,11 +3,10 @@
 #include "material.h"
 #include "aabb.h"
 #include <vector>
-#include <memory>
 
+class Hittable;
 struct HitRecord {
-	Vec3 pos, normal;
-	const Material *material;
+	const Hittable *hittable;
 	Scalar t;
 };
 
@@ -20,6 +19,12 @@ public:
 	bool hitBox(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hit(ray, tMax, t); }
 	bool hitBoxInv(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hitInv(ray, tMax, t); }
 	const AABB& boundingBox() const { return box; }
+
+	virtual bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const = 0;
+
+	virtual Vec3 getNormal(const Vec3 &pos, const Ray &ray) const = 0;
+
+	inline virtual Vec2 getUV(const Vec3 &, const Vec3 &) const { return Vec2(0., 0.); }
 
 	inline virtual bool isNode() const { return false; }
 
@@ -38,6 +43,10 @@ public:
 	inline std::vector<std::shared_ptr<const Hittable>>::iterator begin() { return objects.begin(); }
 	inline std::vector<std::shared_ptr<const Hittable>>::iterator end() { return objects.end(); }
 	inline size_t size() const { return objects.size(); }
+
+	inline bool scatter(const Ray &, const HitRecord &, Color &, Ray &) const override { return false; }
+
+	inline Vec3 getNormal(const Vec3 &, const Ray &) const override { return Vec3(); }
 
 private:
 	std::vector<std::shared_ptr<const Hittable>> objects;

@@ -18,9 +18,7 @@ bool Sphere::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 			if(t <= EPS) return false;
 		}
 		if(t < tMax) {
-			record.pos = ray.at(t);
-			record.normal = (inverted ? center - record.pos : record.pos - center) / radius;
-			record.material = material.get();
+			record.hittable = this;
 			record.t = t;
 			return true;
 		}

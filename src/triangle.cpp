@@ -49,9 +49,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(xg < 0.) return false;
 		Scalar yg = invT[3] * py + invT[4] * pz + invT[5];
 		if(yg >= 0. && xg + yg <= 1.) {
-			record.pos = Vec3(ray.origin().x() + t * ray.direction().x(), py, pz);
-			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
-			record.material = material.get();
+			record.hittable = this;
 			record.t = t;
 			return true;
 		} else return false;
@@ -64,9 +62,7 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(xg < 0.) return false;
 		Scalar yg = invT[4] * px + invT[3] * pz + invT[5];
 		if(yg >= 0. && xg + yg <= 1.) {
-			record.pos = Vec3(px, ray.origin().y() + t * ray.direction().y(), pz);
-			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
-			record.material = material.get();
+			record.hittable = this;
 			record.t = t;
 			return true;
 		} else return false;
@@ -79,14 +75,17 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(xg < 0.) return false;
 		Scalar yg = invT[3] * px + invT[4] * py + invT[5];
 		if(yg >= 0. && xg + yg <= 1.) {
-			record.pos = Vec3(px, py, ray.origin().z() + t * ray.direction().z());
-			record.normal = biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
-			record.material = material.get();
+			record.hittable = this;
 			record.t = t;
 			return true;
 		} else return false;
 	}
-	throw std::runtime_error("Non reachable code in Triangle hit!");
+}
+
+Vec2 Triangle::getUV(const Vec3 &pos, const Vec3 &) const {
+	Scalar x = pos[(1+fixedColumn)%3], y = pos[(2+fixedColumn)%3];
+	return Vec2(invT[0] * x + invT[1] * y + invT[2],
+				invT[3] * x + invT[4] * y + invT[5]);
 }
 
 void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos) {

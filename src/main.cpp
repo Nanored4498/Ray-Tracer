@@ -30,7 +30,7 @@ Color rayColor(const Ray &ray, const Hittable *world, int depth) {
 		if(world->hit(ray, std::numeric_limits<Scalar>::max(), record)) {
 			Color attenuation;
 			Ray scattered;
-			if(record.material->scatter(ray, record, attenuation, scattered)) {
+			if(record.hittable->scatter(ray, record, attenuation, scattered)) {
 				Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y() + scattered.origin().y())/fogHeight));
 				return fogCoeff * attenuation * rayColor(scattered, world, depth-1);
 			} else return Color(0., 0., 0.);
@@ -48,7 +48,8 @@ Hittable* randomScene() {
 	HittableList world;
 
 	// Ground
-	world.add(new Sphere(Vec3(0., -5000., 0.), 5000., new Lambertian(Color(.5, .5, .5))));
+	world.add(new Sphere(Vec3(0., -5000., 0.), 5000.,
+				new Lambertian(new CheckerTexture(Color(.6, .6, .6), Color(1., .3, .1)))));
 
 	// Grid of spheres
 	for(int x = -10; x <= 9; ++x) {

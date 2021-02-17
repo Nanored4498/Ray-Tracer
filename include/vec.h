@@ -5,14 +5,24 @@
 #include <ostream>
 
 class Vec2 {
+private:
+	Scalar X[2];
+
 public:
-	Scalar x, y;
+	Vec2(Scalar x=0., Scalar y=0.) { X[0] = x, X[1] = y; }
 
-	Vec2(Scalar x=0., Scalar y=0.): x(x), y(y) {}
+	inline const Scalar& x() const { return X[0]; }
+	inline Scalar& x() { return X[0]; }
+	inline const Scalar& y() const { return X[1]; }
+	inline Scalar& y() { return X[1]; }
+	inline const Scalar& operator[](uint i) const { return X[i]; }
+	inline const Scalar& operator[](int i) const { return X[i]; }
+	inline Scalar& operator[](uint i) { return X[i]; }
+	inline Scalar& operator[](int i) { return X[i]; }
 
-	inline Vec2 operator*(Scalar scalar) const { return Vec2(x*scalar, y*scalar); }
+	inline Vec2 operator*(Scalar scalar) const { return Vec2(X[0]*scalar, X[1]*scalar); }
 
-	inline Scalar norm2() const { return x*x + y*y; }
+	inline Scalar norm2() const { return X[0]*X[0] + X[1]*X[1]; }
 
 	static Vec2 randomDisc() {
 		Scalar alpha = 2. * M_PI * Random::real();
@@ -24,8 +34,8 @@ public:
 class Vec3 {
 private:
 	Scalar X[3];
-public:
 
+public:
 	Vec3(Scalar x=0., Scalar y=0., Scalar z=0.) { X[0] = x; X[1] = y; X[2] = z; }
 
 	inline const Scalar& x() const { return X[0]; }
@@ -34,6 +44,7 @@ public:
 	inline Scalar& y() { return X[1]; }
 	inline const Scalar& z() const { return X[2]; }
 	inline Scalar& z() { return X[2]; }
+	inline const Scalar& operator[](uint i) const { return X[i]; }
 	inline const Scalar& operator[](int i) const { return X[i]; }
 	inline Scalar& operator[](uint i) { return X[i]; }
 	inline Scalar& operator[](int i) { return X[i]; }
