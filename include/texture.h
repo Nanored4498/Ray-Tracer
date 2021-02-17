@@ -41,11 +41,23 @@ public:
 		delete[] perms[1];
 	}
 
-	Color value(Scalar, Scalar, const Vec3 &p) const override;
+	Color value(Scalar u, Scalar v, const Vec3 &p) const override;
 
 private:
 	static const int nbVals = 1<<8;
 	Vec3 *vecs;
 	int *perms[2];
 	double scale;
+};
+
+class ImageTexture : public Texture {
+public:
+	ImageTexture(std::string fileName);
+	~ImageTexture() { if(data != nullptr) delete data; }
+
+	Color value(Scalar u, Scalar v, const Vec3 &p) const override;
+
+private:
+	u_char *data;
+	int W, H, C;
 };

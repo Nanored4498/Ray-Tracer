@@ -82,6 +82,10 @@ Hittable* randomScene() {
 	// Bunny
 	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.));
 
+	// Earth
+	world.add(new Sphere(Vec3(4., 1.3, 2.7), .5,
+				new Lambertian(new ImageTexture("../textures/earthmap.jpg"))));
+
 	// return new BVHTree(world);
 	return new BVHNode(world);
 }

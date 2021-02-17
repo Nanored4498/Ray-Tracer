@@ -1,5 +1,7 @@
 #include "texture.h"
 
+#include "stb_image.h"
+
 #include <algorithm>
 
 NoiseTexture::NoiseTexture(double scale): scale(scale) {
@@ -43,4 +45,21 @@ Color NoiseTexture::value(Scalar, Scalar, const Vec3 &p) const {
 		weight *=.5;
 	}
 	return Vec3(1., 1., 1.) * .5 * (1. + std::sin(scale * p.z() + 8.*gray));
+}
+
+ImageTexture::ImageTexture(std::string fileName) {
+	data = stbi_load(fileName.c_str(), &W, &H, &C, 3);
+	if(!data) {
+		W = H = 0;
+		throw std::runtime_error("Failed to load the file " + fileName + "!!!");
+	}
+}
+
+Color ImageTexture::value(Scalar u, Scalar v, const Vec3 &) const {
+	if(data == nullptr) return Color(0., 1., 1.);
+	v = 1. - v;
+	int i = std::min(int(u * W), W-1), j = std::min(int(v * H), H-1);
+	u_char* pix = data + C * (i + W * j);
+	const Scalar mult = 1. / 255.;
+	return Color(mult * pix[0], mult * pix[1], mult * pix[2]);
 }
