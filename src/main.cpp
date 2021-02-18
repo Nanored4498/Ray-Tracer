@@ -13,10 +13,10 @@ const Scalar fov = 30.;
 const Scalar aperture = 0.09;
 const Scalar aspectRatio = 16. / 9.;
 const int imgWidth = 1280;
-const int sqrtSamplesPerPixel = 18;
+const int sqrtSamplesPerPixel = 7;
 const int maxDepth = 60;
 
-const Scalar fogDensity = 2.5e-2;
+const Scalar fogDensity = 2.e-2;
 const Scalar fogHeight = 8.;
 const Scalar fogRadius = 24.;
 
@@ -25,23 +25,21 @@ const Camera camera(camPos, -camPos, Vec3(0., 1., 0.), fov, aspectRatio, apertur
 const int imgHeight = imgWidth / aspectRatio;
 
 Color rayColor(const Ray &ray, const Hittable *world, int depth) {
-	if(depth > 0) {
-		HitRecord record;
-		if(world->hit(ray, std::numeric_limits<Scalar>::max(), record)) {
-			Color attenuation;
-			Ray scattered;
-			if(record.hittable->scatter(ray, record, attenuation, scattered)) {
-				Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y() + scattered.origin().y())/fogHeight));
-				return fogCoeff * attenuation * rayColor(scattered, world, depth-1);
-			} else return Color(0., 0., 0.);
-		}
-		// background color
-		Scalar t = .5 * (ray.direction().y() + 1.);
-		Scalar rayFogDist = ray.direction().y() < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y()) / ray.direction().y());
-		Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y()/fogHeight));
-		return fogCoeff * 1.2 * Color(1. - .5*t, 1. - .3*t, 1.);
+	if(depth <= 0) return Color(0., 0., 0.);
+	HitRecord record;
+	if(world->hit(ray, std::numeric_limits<Scalar>::max(), record)) {
+		Color attenuation;
+		Ray scattered;
+		if(record.hittable->scatter(ray, record, attenuation, scattered)) {
+			Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y + scattered.origin().y)/fogHeight));
+			return fogCoeff * attenuation * rayColor(scattered, world, depth-1);
+		} else return Color(0., 0., 0.);
 	}
-	return Color(0., 0., 0.);
+	// background color
+	Scalar t = .5 * (ray.direction().y + 1.);
+	Scalar rayFogDist = ray.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y) / ray.direction().y);
+	Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y/fogHeight));
+	return fogCoeff * 1.14 * Color(1. - .5*t, 1. - .3*t, 1.);
 }
 
 Hittable* randomScene() {
@@ -107,9 +105,9 @@ void work() {
 			}
 			col /= sqrtSamplesPerPixel * sqrtSamplesPerPixel;
 			int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
-			img[pix] = std::min(.999, std::max(0., std::pow(col.x(), 1./2.2))) * 256.;
-			img[pix+1] = std::min(.999, std::max(0., std::pow(col.y(), 1./2.2))) * 256.;
-			img[pix+2] = std::min(.999, std::max(0., std::pow(col.z(), 1./2.2))) * 256.;
+			img[pix] = std::min(.999, std::max(0., std::pow(col.x, 1./2.2))) * 256.;
+			img[pix+1] = std::min(.999, std::max(0., std::pow(col.y, 1./2.2))) * 256.;
+			img[pix+2] = std::min(.999, std::max(0., std::pow(col.z, 1./2.2))) * 256.;
 		}
 	}
 	Stats::aggregateLocalStats();
@@ -119,6 +117,8 @@ int main() {
 	Random::init();
 	world = randomScene();
 	img = new u_char[imgWidth * imgHeight * 3];
+
+	Vec3 v(9., 42, -10);
 
 	auto start = std::chrono::high_resolution_clock::now();
 

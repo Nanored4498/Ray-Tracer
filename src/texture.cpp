@@ -18,7 +18,7 @@ Color NoiseTexture::value(Scalar, Scalar, const Vec3 &p) const {
 	const int depth = 6;
 	Scalar gray = 0., fr = scale, weight = 1.;
 	for(int d = 0; d < depth; ++d) {
-		Scalar u = fr * p.x(), v = fr * p.y(), w = fr * p.z();
+		Scalar u = fr * p.x, v = fr * p.y, w = fr * p.z;
 		int i = static_cast<int>(std::floor(u));
 		int j = static_cast<int>(std::floor(v));
 		int k = static_cast<int>(std::floor(w));
@@ -35,7 +35,7 @@ Color NoiseTexture::value(Scalar, Scalar, const Vec3 &p) const {
 		i &= (nbVals-1);
 		j = perms[0][j & (nbVals-1)];
 		k = perms[1][k & (nbVals-1)];
-		const auto fun = [&](int i, Scalar x, Scalar y, Scalar z) { return vecs[i].x()*x + vecs[i].y()*y + vecs[i].z()*z; };
+		const auto fun = [&](int i, Scalar x, Scalar y, Scalar z) { return vecs[i].x*x + vecs[i].y*y + vecs[i].z*z; };
 		Scalar add = (1. - u) * ((1. - v) * (w2 * fun(i ^ j ^ k, u, v, w) + w * fun(i ^ j ^ k2, u, v, w-1.))
 						+ v * (w2 * fun(i ^ j2 ^ k, u, v-1., w) + w * fun(i ^ j2 ^ k2, u, v-1., w-1.)))
 					+ u * ((1. - v) * (w2 * fun(i2 ^ j ^ k, u-1., v, w) + w * fun(i2 ^ j ^ k2, u-1., v, w-1.))
@@ -44,7 +44,7 @@ Color NoiseTexture::value(Scalar, Scalar, const Vec3 &p) const {
 		fr *= 2.;
 		weight *=.5;
 	}
-	return Vec3(1., 1., 1.) * .5 * (1. + std::sin(scale * p.z() + 8.*gray));
+	return Vec3(1., 1., 1.) * .5 * (1. + std::sin(scale * p.z + 8.*gray));
 }
 
 ImageTexture::ImageTexture(std::string fileName) {

@@ -24,7 +24,7 @@ public:
 	CheckerTexture(const Color &even, const Color &odd): even(even), odd(odd) {}
 
 	inline Color value(Scalar, Scalar, const Vec3& p) const override {
-		if((std::sin(8.*p.x()) < 0.) ^ (std::sin(8.*p.y()) < 0.) ^ (std::sin(8.*p.z()) < 0.)) return odd;
+		if((std::sin(8.*p.x) < 0.) ^ (std::sin(8.*p.y) < 0.) ^ (std::sin(8.*p.z) < 0.)) return odd;
 		else return even;
 	}
 

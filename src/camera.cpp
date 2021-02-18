@@ -19,6 +19,6 @@ Camera::Camera(const Vec3 &pos, const Vec3 &direction, const Vec3 &up, Scalar fo
 
 Ray Camera::getRay(Scalar x, Scalar y) const {
 	Vec2 offset = Vec2::randomDisc();
-	Vec3 origin = pos + (lensRadius * offset.x()) * u + (lensRadius * offset.y()) * v;
+	Vec3 origin = pos + (lensRadius * offset.x) * u + (lensRadius * offset.y) * v;
 	return Ray(origin, (corner + x * horizontal + y * vertical - origin).normalized());
 }

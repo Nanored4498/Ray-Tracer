@@ -14,9 +14,9 @@ Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<
 	Vec3 e1 = b - a, e2 = c - a;
 	normal = cross(e1, e2);
 
-	if(std::abs(normal.x()) > std::abs(normal.y()) && std::abs(normal.x()) > std::abs(normal.z())) fixedColumn = 0;
-	else if(std::abs(normal.y()) > std::abs(normal.z())) fixedColumn = 1;
-	else if(std::abs(normal.z()) > 0.) fixedColumn = 2;
+	if(std::abs(normal.x) > std::abs(normal.y) && std::abs(normal.x) > std::abs(normal.z)) fixedColumn = 0;
+	else if(std::abs(normal.y) > std::abs(normal.z)) fixedColumn = 1;
+	else if(std::abs(normal.z) > 0.) fixedColumn = 2;
 	else throw std::runtime_error("Degenerated triangle!");
 
 	Scalar in = 1. / normal[fixedColumn];
@@ -41,10 +41,10 @@ Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<
 bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	UPDATE_TRIANGLE_STATS
 	if(fixedColumn == 0) {
-		Scalar t = - (ray.origin().x() + invT[6] * ray.origin().y() + invT[7] * ray.origin().z() + invT[8])
-					/ (ray.direction().x() + invT[6] * ray.direction().y() + invT[7] * ray.direction().z());
+		Scalar t = - (ray.origin().x + invT[6] * ray.origin().y + invT[7] * ray.origin().z + invT[8])
+					/ (ray.direction().x + invT[6] * ray.direction().y + invT[7] * ray.direction().z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar py = ray.origin().y() + t * ray.direction().y(), pz = ray.origin().z() + t * ray.direction().z();
+		Scalar py = ray.origin().y + t * ray.direction().y, pz = ray.origin().z + t * ray.direction().z;
 		Scalar xg = invT[0] * py + invT[1] * pz + invT[2];
 		if(xg < 0.) return false;
 		Scalar yg = invT[3] * py + invT[4] * pz + invT[5];
@@ -54,10 +54,10 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 			return true;
 		} else return false;
 	} else if(fixedColumn == 1) {
-		Scalar t = - (invT[7] * ray.origin().x() + ray.origin().y() + invT[6] * ray.origin().z() + invT[8])
-					/ (invT[7] * ray.direction().x() + ray.direction().y() + invT[6] * ray.direction().z());
+		Scalar t = - (invT[7] * ray.origin().x + ray.origin().y + invT[6] * ray.origin().z + invT[8])
+					/ (invT[7] * ray.direction().x + ray.direction().y + invT[6] * ray.direction().z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin().x() + t * ray.direction().x(), pz = ray.origin().z() + t * ray.direction().z();
+		Scalar px = ray.origin().x + t * ray.direction().x, pz = ray.origin().z + t * ray.direction().z;
 		Scalar xg = invT[1] * px + invT[0] * pz + invT[2];
 		if(xg < 0.) return false;
 		Scalar yg = invT[4] * px + invT[3] * pz + invT[5];
@@ -67,10 +67,10 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 			return true;
 		} else return false;
 	} else {
-		Scalar t = - (invT[6] * ray.origin().x() + invT[7] * ray.origin().y() + ray.origin().z() + invT[8])
-					/ (invT[6] * ray.direction().x() + invT[7] * ray.direction().y() + ray.direction().z());
+		Scalar t = - (invT[6] * ray.origin().x + invT[7] * ray.origin().y + ray.origin().z + invT[8])
+					/ (invT[6] * ray.direction().x + invT[7] * ray.direction().y + ray.direction().z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin().x() + t * ray.direction().x(), py = ray.origin().y() + t * ray.direction().y();
+		Scalar px = ray.origin().x + t * ray.direction().x, py = ray.origin().y + t * ray.direction().y;
 		Scalar xg = invT[0] * px + invT[1] * py + invT[2];
 		if(xg < 0.) return false;
 		Scalar yg = invT[3] * px + invT[4] * py + invT[5];
@@ -96,7 +96,7 @@ void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxi
 		if(word.size() != 1) throw std::runtime_error("Unknown word " + word + " in OBJ file!");
 		if(word[0] == 'v') {
 			vertices.emplace_back();
-			ifs >> vertices.back().x() >> vertices.back().y() >> vertices.back().z();
+			ifs >> vertices.back().x >> vertices.back().y >> vertices.back().z;
 			if(vertices.size() == 1) box = AABB(vertices.back(), vertices.back());
 			else box.surround(AABB(vertices.back(), vertices.back()));
 		} else if(word[0] == 'f') {

@@ -27,7 +27,7 @@ public:
 	}
 
 	inline Vec2 getUV(const Vec3 &, const Vec3 &normal) const {
-		return Vec2(.5 + std::atan2(-normal.z(), normal.x()) / (2.*M_PI), std::acos(-normal.y()) / M_PI);
+		return Vec2(.5 + std::atan2(-normal.z, normal.x) / (2.*M_PI), std::acos(-normal.y) / M_PI);
 	}
 
 private:
