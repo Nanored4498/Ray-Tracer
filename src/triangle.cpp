@@ -6,17 +6,7 @@
 std::atomic<unsigned long long> Stats::triangleRayTest = {0uLL};
 thread_local unsigned long long Stats::localTriangleRayTest = 0uLL;
 
-Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface):
-	material(material),
-	biface(biface) {
-	Vec3 mini = min(a, min(b, c)), maxi = max(a, max(b, c));
-	for(uint i = 0; i < 3; ++i)
-		if(mini[i] == maxi[i]) {
-			mini[i] -= .5*EPS;
-			maxi[i] += .5*EPS;
-		}
-	box = AABB(mini, maxi);
-	
+inline void Triangle::init(const Vec3 &a, const Vec3 &b, const Vec3 &c) {
 	Vec3 e1 = b - a, e2 = c - a;
 	normal = cross(e1, e2);
 
@@ -44,48 +34,99 @@ Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<
 	normal /= normal.norm();
 }
 
+Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface):
+	material(std::move(material)),
+	biface(biface) {
+	Vec3 mini = min(a, min(b, c)), maxi = max(a, max(b, c));
+	for(uint i = 0; i < 3; ++i)
+		if(mini[i] == maxi[i]) {
+			mini[i] -= .5*EPS;
+			maxi[i] += .5*EPS;
+		}
+	box = AABB(mini, maxi);
+	init(a, b, c);
+}
+
+Quad::Quad(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface):
+	Triangle(std::move(material), biface) {
+	Vec3 d = b+c-a;
+	Vec3 mini = min(a, min(b, min(c, d))), maxi = max(a, max(b, max(c, d)));
+	for(uint i = 0; i < 3; ++i)
+		if(mini[i] == maxi[i]) {
+			mini[i] -= .5*EPS;
+			maxi[i] += .5*EPS;
+		}
+	box = AABB(mini, maxi);
+	init(a, b, c);
+}
+
 bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	UPDATE_TRIANGLE_STATS
+	Scalar t, u, v;
 	if(fixedColumn == 0) {
-		Scalar t = - (ray.origin().x + invT[6] * ray.origin().y + invT[7] * ray.origin().z + invT[8])
+		t = - (ray.origin().x + invT[6] * ray.origin().y + invT[7] * ray.origin().z + invT[8])
 					/ (ray.direction().x + invT[6] * ray.direction().y + invT[7] * ray.direction().z);
 		if(t <= EPS || t >= tMax) return false;
 		Scalar py = ray.origin().y + t * ray.direction().y, pz = ray.origin().z + t * ray.direction().z;
-		Scalar xg = invT[0] * py + invT[1] * pz + invT[2];
-		if(xg < 0.) return false;
-		Scalar yg = invT[3] * py + invT[4] * pz + invT[5];
-		if(yg >= 0. && xg + yg <= 1.) {
-			record.hittable = this;
-			record.t = t;
-			return true;
-		} else return false;
+		u = invT[0] * py + invT[1] * pz + invT[2];
+		if(u < 0.) return false;
+		v = invT[3] * py + invT[4] * pz + invT[5];
 	} else if(fixedColumn == 1) {
-		Scalar t = - (invT[7] * ray.origin().x + ray.origin().y + invT[6] * ray.origin().z + invT[8])
+		t = - (invT[7] * ray.origin().x + ray.origin().y + invT[6] * ray.origin().z + invT[8])
 					/ (invT[7] * ray.direction().x + ray.direction().y + invT[6] * ray.direction().z);
 		if(t <= EPS || t >= tMax) return false;
 		Scalar px = ray.origin().x + t * ray.direction().x, pz = ray.origin().z + t * ray.direction().z;
-		Scalar xg = invT[1] * px + invT[0] * pz + invT[2];
-		if(xg < 0.) return false;
-		Scalar yg = invT[4] * px + invT[3] * pz + invT[5];
-		if(yg >= 0. && xg + yg <= 1.) {
-			record.hittable = this;
-			record.t = t;
-			return true;
-		} else return false;
+		u = invT[0] * pz + invT[1] * px + invT[2];
+		if(u < 0.) return false;
+		v = invT[3] * pz + invT[4] * px  + invT[5];
 	} else {
-		Scalar t = - (invT[6] * ray.origin().x + invT[7] * ray.origin().y + ray.origin().z + invT[8])
+		t = - (invT[6] * ray.origin().x + invT[7] * ray.origin().y + ray.origin().z + invT[8])
 					/ (invT[6] * ray.direction().x + invT[7] * ray.direction().y + ray.direction().z);
 		if(t <= EPS || t >= tMax) return false;
 		Scalar px = ray.origin().x + t * ray.direction().x, py = ray.origin().y + t * ray.direction().y;
-		Scalar xg = invT[0] * px + invT[1] * py + invT[2];
-		if(xg < 0.) return false;
-		Scalar yg = invT[3] * px + invT[4] * py + invT[5];
-		if(yg >= 0. && xg + yg <= 1.) {
-			record.hittable = this;
-			record.t = t;
-			return true;
-		} else return false;
+		u = invT[0] * px + invT[1] * py + invT[2];
+		if(u < 0.) return false;
+		v = invT[3] * px + invT[4] * py + invT[5];
 	}
+	if(v >= 0. && u + v <= 1.) {
+		record.hittable = this;
+		record.t = t;
+		return true;
+	} else return false;
+}
+bool Quad::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
+	UPDATE_TRIANGLE_STATS
+	Scalar t, u, v;
+	if(fixedColumn == 0) {
+		t = - (ray.origin().x + invT[6] * ray.origin().y + invT[7] * ray.origin().z + invT[8])
+					/ (ray.direction().x + invT[6] * ray.direction().y + invT[7] * ray.direction().z);
+		if(t <= EPS || t >= tMax) return false;
+		Scalar py = ray.origin().y + t * ray.direction().y, pz = ray.origin().z + t * ray.direction().z;
+		u = invT[0] * py + invT[1] * pz + invT[2];
+		if(u < 0. || u > 1.) return false;
+		v = invT[3] * py + invT[4] * pz + invT[5];
+	} else if(fixedColumn == 1) {
+		t = - (invT[7] * ray.origin().x + ray.origin().y + invT[6] * ray.origin().z + invT[8])
+					/ (invT[7] * ray.direction().x + ray.direction().y + invT[6] * ray.direction().z);
+		if(t <= EPS || t >= tMax) return false;
+		Scalar px = ray.origin().x + t * ray.direction().x, pz = ray.origin().z + t * ray.direction().z;
+		u = invT[0] * pz + invT[1] * px + invT[2];
+		if(u < 0. || u > 1.) return false;
+		v = invT[3] * pz + invT[4] * px  + invT[5];
+	} else {
+		t = - (invT[6] * ray.origin().x + invT[7] * ray.origin().y + ray.origin().z + invT[8])
+					/ (invT[6] * ray.direction().x + invT[7] * ray.direction().y + ray.direction().z);
+		if(t <= EPS || t >= tMax) return false;
+		Scalar px = ray.origin().x + t * ray.direction().x, py = ray.origin().y + t * ray.direction().y;
+		u = invT[0] * px + invT[1] * py + invT[2];
+		if(u < 0. || u > 1.) return false;
+		v = invT[3] * px + invT[4] * py + invT[5];
+	}
+	if(v >= 0. && v <= 1.) {
+		record.hittable = this;
+		record.t = t;
+		return true;
+	} else return false;
 }
 
 void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos) {

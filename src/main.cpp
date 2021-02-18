@@ -11,7 +11,7 @@
 
 const Scalar aperture = 0.09;
 const Vec3 up(0., 1., 0.);
-const int sqrtSamplesPerPixel = 20;
+const int sqrtSamplesPerPixel = 10;
 const int maxDepth = 40;
 
 Camera camera;
@@ -122,18 +122,12 @@ HittableList cornellBox() {
 		green = std::make_shared<Lambertian>(Color(.12, .45, .15)),
 		light = std::make_shared<DiffuseLight>(Color(15., 15., 15.));
 	
-	world.add(std::make_shared<Triangle>(Vec3(555, 0, 0), Vec3(555, 0, 555), Vec3(555, 555, 555), green));
-	world.add(std::make_shared<Triangle>(Vec3(555, 0, 0), Vec3(555, 555, 555), Vec3(555, 555, 0), green));
-	world.add(std::make_shared<Triangle>(Vec3(0, 0, 0), Vec3(0, 555, 555), Vec3(0, 0, 555), red));
-	world.add(std::make_shared<Triangle>(Vec3(0, 0, 0), Vec3(0, 555, 0), Vec3(0, 555, 555), red));
-	world.add(std::make_shared<Triangle>(Vec3(213, 554, 227), Vec3(343, 554, 227), Vec3(213, 554, 332), light));
-	world.add(std::make_shared<Triangle>(Vec3(343, 554, 227), Vec3(343, 554, 332), Vec3(213, 554, 332), light));
-	world.add(std::make_shared<Triangle>(Vec3(0, 555, 555), Vec3(555, 555, 555), Vec3(0, 0, 555), white));
-	world.add(std::make_shared<Triangle>(Vec3(555, 555, 555), Vec3(555, 0, 555), Vec3(0, 0, 555), white));
-	world.add(std::make_shared<Triangle>(Vec3(0, 0, 0), Vec3(0, 0, 555), Vec3(555, 0, 0), white));
-	world.add(std::make_shared<Triangle>(Vec3(555, 0, 555), Vec3(555, 0, 0), Vec3(0, 0, 555), white));
-	world.add(std::make_shared<Triangle>(Vec3(0, 555, 0), Vec3(555, 555, 0), Vec3(0, 555, 555), white));
-	world.add(std::make_shared<Triangle>(Vec3(555, 555, 555), Vec3(0, 555, 555), Vec3(555, 555, 0), white));
+	world.add(std::make_shared<Quad>(Vec3(555, 0, 0), Vec3(555, 0, 555), Vec3(555, 555, 0), green));
+	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 555, 0), Vec3(0, 0, 555), red));
+	world.add(std::make_shared<Quad>(Vec3(213, 554, 227), Vec3(343, 554, 227), Vec3(213, 554, 332), light));
+	world.add(std::make_shared<Quad>(Vec3(0, 555, 555), Vec3(555, 555, 555), Vec3(0, 0, 555), white));
+	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 0, 555), Vec3(555, 0, 0), white));
+	world.add(std::make_shared<Quad>(Vec3(0, 555, 0), Vec3(555, 555, 0), Vec3(0, 555, 555), white));
 	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 180., 320., Vec3(278., 153., 320.));
 	
 	return world;

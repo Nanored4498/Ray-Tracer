@@ -5,10 +5,8 @@
 class Triangle : public Hittable {
 public:
 	Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface=false);
-
-	~Triangle() {}
 	
-	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
+	virtual bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
 	inline bool scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const override {
 		return material->scatter(ray, record, emitted, attenuation, scattered);
@@ -24,12 +22,22 @@ public:
 					invT[3] * x + invT[4] * y + invT[5]);
 	}
 
-private:
+protected:
+	Triangle(std::shared_ptr<const Material> material, bool biface): material(std::move(material)), biface(biface) {}
+	void init(const Vec3 &a, const Vec3 &b, const Vec3 &c);
+
 	Vec3 normal;
 	std::shared_ptr<const Material> material;
 	bool biface;
 	unsigned char fixedColumn;
 	Scalar invT[9];
+};
+
+class Quad : public Triangle {
+public:
+	Quad(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface=false);
+	
+	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 };
 
 void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos);
