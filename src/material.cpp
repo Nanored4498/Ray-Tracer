@@ -1,22 +1,25 @@
 #include "hittable.h"
 
-bool Lambertian::scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const {
+bool Lambertian::scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const {
 	Vec3 pos = ray.at(record.t), normal = record.hittable->getNormal(pos, ray);
 	Vec2 uv = record.hittable->getUV(pos, normal);
+	emitted.zero();
 	attenuation = albedo->value(uv.x, uv.y, pos);
 	scattered = Ray(pos, (normal + Vec3::randomBall()).normalized());
 	return true;
 }
 
-bool Metal::scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const {
+bool Metal::scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const {
 	Vec3 pos = ray.at(record.t), normal = record.hittable->getNormal(pos, ray);
+	emitted.zero();
 	attenuation = albedo;
 	scattered = Ray(pos, (reflect(ray.direction(), normal) + fuzz * Vec3::randomBall()).normalized());
 	return dot(scattered.direction(), normal) > 0.;
 }
 
-bool Dielectric::scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const {
+bool Dielectric::scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const {
 	Vec3 pos = ray.at(record.t), normal = record.hittable->getNormal(pos, ray);
+	emitted.zero();
 	attenuation = Color(1., 1., 1.);
 	Scalar cosTheta = - dot(ray.direction(), normal);
 	Scalar sinTheta = std::sqrt(1. - cosTheta * cosTheta);
@@ -35,4 +38,11 @@ bool Dielectric::scatter(const Ray &ray, const HitRecord &record, Color &attenua
 		}
 	}
 	return true;
+}
+
+bool DiffuseLight::scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &, Ray &) const {
+	Vec3 pos = ray.at(record.t), normal = record.hittable->getNormal(pos, ray);
+	Vec2 uv = record.hittable->getUV(pos, normal);
+	emitted = emit->value(uv.x, uv.y, pos);
+	return false;
 }

@@ -20,7 +20,10 @@ public:
 	bool hitBoxInv(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hitInv(ray, tMax, t); }
 	const AABB& boundingBox() const { return box; }
 
-	virtual bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const = 0;
+	inline virtual bool scatter(const Ray &, const HitRecord &, Color &emitted, Color &, Ray &) const {
+		emitted.zero();
+		return false;
+	}
 
 	virtual Vec3 getNormal(const Vec3 &pos, const Ray &ray) const = 0;
 
@@ -39,12 +42,11 @@ public:
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
 	void add(const Hittable *object);
+	void add(std::shared_ptr<Hittable> object);
 
 	inline std::vector<std::shared_ptr<const Hittable>>::iterator begin() { return objects.begin(); }
 	inline std::vector<std::shared_ptr<const Hittable>>::iterator end() { return objects.end(); }
 	inline size_t size() const { return objects.size(); }
-
-	inline bool scatter(const Ray &, const HitRecord &, Color &, Ray &) const override { return false; }
 
 	inline Vec3 getNormal(const Vec3 &, const Ray &) const override { return Vec3(); }
 

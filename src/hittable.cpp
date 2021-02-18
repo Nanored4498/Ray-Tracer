@@ -16,3 +16,9 @@ void HittableList::add(const Hittable *object) {
 	else box.surround(object->boundingBox());
 	objects.emplace_back(object);
 }
+
+void HittableList::add(std::shared_ptr<Hittable> object) {
+	if(objects.empty()) box = object->boundingBox();
+	else box.surround(object->boundingBox());
+	objects.emplace_back(std::move(object));
+}

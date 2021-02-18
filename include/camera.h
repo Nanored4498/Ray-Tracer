@@ -2,6 +2,7 @@
 
 class Camera {
 public:
+	Camera() = default;
 	Camera(const Vec3 &pos, const Vec3 &direction, const Vec3 &up, Scalar fov, Scalar aspectRatio, Scalar aperture, Scalar focusDistance);
 
 	Ray getRay(Scalar x, Scalar y) const;

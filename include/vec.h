@@ -32,6 +32,8 @@ public:
 
 	Vec3(Scalar x=0., Scalar y=0., Scalar z=0.): x(x), y(y), z(z) {}
 
+	inline void zero() { x = y = z = 0.; }
+
 	inline const Scalar& operator[](uint i) const { return reinterpret_cast<const Scalar*>(this)[i]; }
 	inline const Scalar& operator[](int i) const { return reinterpret_cast<const Scalar*>(this)[i]; }
 	inline Scalar& operator[](uint i) { return reinterpret_cast<Scalar*>(this)[i]; }

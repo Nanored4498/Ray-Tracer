@@ -10,8 +10,8 @@ public:
 	
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
-	inline bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const override {
-		return material->scatter(ray, record, attenuation, scattered);
+	inline bool scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const override {
+		return material->scatter(ray, record, emitted, attenuation, scattered);
 	}
 
 	inline Vec3 getNormal(const Vec3 &, const Ray &ray) const override {

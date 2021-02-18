@@ -4,10 +4,10 @@
 
 class Sphere : public Hittable {
 public:
-	Sphere(const Vec3 &center, Scalar radius, Material *material, bool inverted=false):
+	Sphere(const Vec3 &center, Scalar radius, std::shared_ptr<Material> material, bool inverted=false):
 		center(center),
 		radius(radius),
-		material(material),
+		material(std::move(material)),
 		inverted(inverted) {
 		Vec3 r(radius, radius, radius);
 		box = AABB(center - r, center + r);
@@ -17,8 +17,8 @@ public:
 	
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
-	inline bool scatter(const Ray &ray, const HitRecord &record, Color &attenuation, Ray &scattered) const override {
-		return material->scatter(ray, record, attenuation, scattered);
+	inline bool scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const override {
+		return material->scatter(ray, record, emitted, attenuation, scattered);
 	}
 
 	inline Vec3 getNormal(const Vec3 &pos, const Ray &) const override {

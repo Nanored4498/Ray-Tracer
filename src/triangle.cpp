@@ -9,7 +9,13 @@ thread_local unsigned long long Stats::localTriangleRayTest = 0uLL;
 Triangle::Triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Material> material, bool biface):
 	material(material),
 	biface(biface) {
-	box = AABB(min(a, min(b, c)), max(a, max(b, c)));
+	Vec3 mini = min(a, min(b, c)), maxi = max(a, max(b, c));
+	for(uint i = 0; i < 3; ++i)
+		if(mini[i] == maxi[i]) {
+			mini[i] -= .5*EPS;
+			maxi[i] += .5*EPS;
+		}
+	box = AABB(mini, maxi);
 	
 	Vec3 e1 = b - a, e2 = c - a;
 	normal = cross(e1, e2);
@@ -120,7 +126,9 @@ void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxi
 		v = pos + scale * (dot(v, z) * z + (vx * co - vy * si) * x + (vx * si + vy * co) * y);
 	}
 
+	std::shared_ptr<Material> mat = std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.08));
 	for(const auto &[i, j, k] : faces)
-		// list.add(new Triangle(vertices[i-1], vertices[j-1], vertices[k-1], sharedMat));
-		list.add(new Triangle(vertices[i-1], vertices[j-1], vertices[k-1], std::make_shared<Metal>(Vec3(.52+.04*Random::real(), .35+.03*Random::real(), .05+.01*Random::real()), .08*Random::real())));
+		list.add(std::make_shared<Triangle>(vertices[i-1], vertices[j-1], vertices[k-1],
+					mat));
+					// std::make_shared<Metal>(Vec3(.52+.04*Random::real(), .35+.03*Random::real(), .05+.01*Random::real()), .08*Random::real())));
 }
