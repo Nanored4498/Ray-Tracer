@@ -9,42 +9,50 @@
 #include <iostream>
 #include <thread>
 
-const Scalar aperture = 0.09;
 const Vec3 up(0., 1., 0.);
-const int sqrtSamplesPerPixel = 10;
+const int SamplesPerPixel = 40;
 const int maxDepth = 40;
+const bool sky = false;
 
 Camera camera;
 int imgWidth, imgHeight;
 Scalar fogDensity, fogHeight, fogRadius;
-const bool sky = false;
 
-Color rayColor(const Ray &ray, const Hittable *world, int depth) {
-	if(depth <= 0) return Color(0., 0., 0.);
-	HitRecord record;
-	if(world->hit(ray, std::numeric_limits<Scalar>::max(), record)) {
-		Color emitted, attenuation;
-		Ray scattered;
-		if(record.hittable->scatter(ray, record, emitted, attenuation, scattered)) {
-			Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(ray.origin().y + scattered.origin().y)/fogHeight));
-			return emitted + fogCoeff * attenuation * rayColor(scattered, world, depth-1);
-		} else return emitted;
+Color rayColor(const Ray &ray, const Hittable *world) {
+	Vec3 color(0., 0., 0.), mult(1., 1., 1.);
+	Ray currentRay = ray;
+	for(int depth = 0; depth < maxDepth; ++depth) {
+		HitRecord record;
+		if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
+			Color emitted, attenuation;
+			Ray scattered;
+			if(record.hittable->scatter(currentRay, record, emitted, attenuation, scattered)) {
+				Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(currentRay.origin().y + scattered.origin().y)/fogHeight));
+				color += mult * emitted;
+				mult *= fogCoeff * attenuation;
+				if(mult.maxCoeff() < 1e-5) break;
+				currentRay = scattered;
+			} else {
+				color += mult * emitted;
+				break;
+			}
+		} else if(sky) {
+			Scalar rayFogDist = currentRay.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - currentRay.origin().y) / currentRay.direction().y);
+			Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - currentRay.origin().y/fogHeight));
+			Scalar t = .5 * (currentRay.direction().y + 1.);
+			color += mult * fogCoeff * .42 * Color(.42-.42*t, .21-.21*t, .07-.07*t);
+			break;
+		} else break;
 	}
-	// background color
-	if(sky) {
-		Scalar rayFogDist = ray.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - ray.origin().y) / ray.direction().y);
-		Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - ray.origin().y/fogHeight));
-		Scalar t = .5 * (ray.direction().y + 1.);
-		return fogCoeff * Color(.42-.42*t, .21-.21*t, .07-.07*t);
-	}
-	return Color(0., 0., 0.);
+	return color;
 }
 
-HittableList randomScene() {
+HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	HittableList world;
 
 	// Camera
 	const Scalar fov = 30.;
+	const Scalar aperture = 0.09;
 	const Scalar aspectRatio = 16. / 9.;
 	const Vec3 camPos(13.6, 2., 3.6);
 	camera = Camera(camPos, -camPos, up, fov, aspectRatio, aperture, 10.);
@@ -57,20 +65,22 @@ HittableList randomScene() {
 	fogRadius = 24.;
 
 	// Ground
-	world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
-				// std::make_shared<Lambertian>(std::make_shared<CheckerTexture>(Color(.6, .6, .6), Color(1., .3, .1)))));
-				std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(4.))));
+	if(noisyGround) world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
+								std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(4.))));
+	else world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
+						std::make_shared<Lambertian>(std::make_shared<CheckerTexture>(Color(.6, .6, .6), Color(1., .3, .1)))));
 
 	// Grid of spheres
 	for(int x = -10; x <= 9; ++x) {
 		for(int z = -8; z <= 4; ++z) {
 			Vec3 center(x + .66 * Random::real(), .2, z + .66 * Random::real());
-			if((center - Vec3(3.75, .2, 1.)).norm2() < 1.) continue;
-			/*
-			if((center - Vec3(4., .9, 0.)).norm2() < 1.21) continue;
-			if((center - Vec3(0., .95, 0.)).norm2() < 1.33) continue;
-			if((center - Vec3(-4., 1., 0.)).norm2() < 1.44) continue;
-			*/
+			if(bunny) {
+				if((center - Vec3(4., .2, 1.)).norm2() < 1.) continue;
+			} else {
+				if((center - Vec3(4., .9, 0.)).norm2() < 1.21) continue;
+				if((center - Vec3(0., .95, 0.)).norm2() < 1.33) continue;
+				if((center - Vec3(-4., 1., 0.)).norm2() < 1.44) continue;
+			}
 			std::shared_ptr<Material> mat;
 			Scalar rand_mat = Random::real();
 			if(rand_mat < .5) mat = std::make_shared<Lambertian>(Color::random() * Color::random());
@@ -81,16 +91,14 @@ HittableList randomScene() {
 		}
 	}
 
-	/*
-	// big spheres
-	world.add(std::make_shared<Sphere>(Vec3(-4., 1., 0.), 1., std::make_shared<Lambertian>(Vec3(.4, .2, .1))));
-	world.add(std::make_shared<Sphere>(Vec3(0., .95, 0.), .95, std::make_shared<Dielectric>(1.5)));
-	world.add(std::make_shared<Sphere>(Vec3(0., .95, 0.), .75, std::make_shared<Dielectric>(1.5), true));
-	world.add(std::make_shared<Sphere>(Vec3(4., .9, 0.), .9, std::make_shared<Metal>(Vec3(.7, .6, .5), 0.)));
-	*/
-
-	// Bunny
-	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.));
+	// Big spheres or Bunny
+	if(bunny) loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.));
+	else {
+		world.add(std::make_shared<Sphere>(Vec3(-4., 1., 0.), 1., std::make_shared<Lambertian>(Vec3(.4, .2, .1))));
+		world.add(std::make_shared<Sphere>(Vec3(0., .95, 0.), .95, std::make_shared<Dielectric>(1.5)));
+		world.add(std::make_shared<Sphere>(Vec3(0., .95, 0.), .75, std::make_shared<Dielectric>(1.5), true));
+		world.add(std::make_shared<Sphere>(Vec3(4., .9, 0.), .9, std::make_shared<Metal>(Vec3(.7, .6, .5), 0.)));
+	}
 
 	// Earth
 	world.add(std::make_shared<Sphere>(Vec3(4., 1.3, 2.7), .5,
@@ -104,7 +112,7 @@ HittableList cornellBox() {
 
 	// Camera
 	const Scalar fov = 40.;
-	const Scalar aperture = 0.09;
+	const Scalar aperture = 3.;
 	const Vec3 camPos(278., 278., -800.);
 	const Vec3 direction(0., 0., 1.);
 	camera = Camera(camPos, direction, up, fov, 1., aperture, 800.);
@@ -117,7 +125,7 @@ HittableList cornellBox() {
 
 	// Materials
 	std::shared_ptr<Material>
-		red = std::make_shared<Lambertian>(Color(.65, .05, 0.5)),
+		red = std::make_shared<Lambertian>(Color(.65, .05, .05)),
 		white = std::make_shared<Lambertian>(Color(.73, .73, .73)),
 		green = std::make_shared<Lambertian>(Color(.12, .45, .15)),
 		light = std::make_shared<DiffuseLight>(Color(15., 15., 15.));
@@ -136,20 +144,25 @@ HittableList cornellBox() {
 Hittable *world;
 u_char *img;
 std::atomic<int> I;
-int sspp = 2;
+int spp = 4;
 
 void work() {
+	const Scalar phi = 1.324717957244746026;
+	const Scalar ax = 1. / phi;
+	const Scalar ay = ax*ax;
+	Scalar x = Random::real();
+	Scalar y = Random::real();
 	for(int i = I++; i < imgWidth; i = I++) {
 		for(int j = 0; j < imgHeight; ++j) {
 			Color col(0., 0., 0.);
-			for(int sx = 0; sx < sspp; ++sx) {
-				for(int sy = 0; sy < sspp; ++sy) {
-					Scalar x = (i + (sx + Random::real()) / sspp) / imgWidth;
-					Scalar y = (j + (sy + Random::real()) / sspp) / imgHeight;
-					col += rayColor(camera.getRay(x, y), world, maxDepth);
-				}
+			for(int s = 0; s < spp; ++s) {
+				x += ax;
+				y += ay;
+				x += i - std::floor(x);
+				y += j - std::floor(y);
+				col += rayColor(camera.getRay(x / imgWidth, y / imgHeight), world);
 			}
-			col /= sspp * sspp;
+			col /= spp;
 			int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
 			col.x = std::max(1e-4, col.x);
 			col.y = std::max(1e-4, col.y);
@@ -186,7 +199,7 @@ void render() {
 
 int main() {
 	Random::init();
-	// HittableList list = randomScene();
+	// HittableList list = randomScene(false, false);
 	HittableList list = cornellBox();
 	world = new BVHNode(list);
 	// world = new BVHTree(list);
@@ -194,7 +207,7 @@ int main() {
 
 	render();
 	stbi_write_png("pre.png", imgWidth, imgHeight, 3, img, 0);
-	sspp = sqrtSamplesPerPixel;
+	spp = SamplesPerPixel;
 	render();
 	stbi_write_png("out.png", imgWidth, imgHeight, 3, img, 0);
 

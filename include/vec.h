@@ -69,6 +69,12 @@ public:
 		z += other.z;
 		return *this;
 	}
+	inline Vec3& operator*=(const Vec3 &other) {
+		x *= other.x;
+		y *= other.y;
+		z *= other.z;
+		return *this;
+	}
 
 	inline Vec3 operator/(Scalar scalar) const { return Vec3(x/scalar, y/scalar, z/scalar); }
 	inline Vec3 operator*(Scalar scalar) const { return Vec3(x*scalar, y*scalar, z*scalar); }

@@ -167,7 +167,7 @@ void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxi
 		v = pos + scale * (dot(v, z) * z + (vx * co - vy * si) * x + (vx * si + vy * co) * y);
 	}
 
-	std::shared_ptr<Material> mat = std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.08));
+	std::shared_ptr<Material> mat = std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.09));
 	for(const auto &[i, j, k] : faces)
 		list.add(std::make_shared<Triangle>(vertices[i-1], vertices[j-1], vertices[k-1],
 					mat));
