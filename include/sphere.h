@@ -12,8 +12,6 @@ public:
 		Vec3 r(radius, radius, radius);
 		box = AABB(center - r, center + r);
 	}
-
-	~Sphere() {}
 	
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 
@@ -26,7 +24,7 @@ public:
 		else return (pos - center) / radius;
 	}
 
-	inline Vec2 getUV(const Vec3 &, const Vec3 &normal) const {
+	inline Vec2 getUV(const Vec3 &, const Vec3 &normal) const override {
 		return Vec2(.5 + std::atan2(-normal.z, normal.x) / (2.*M_PI), std::acos(-normal.y) / M_PI);
 	}
 

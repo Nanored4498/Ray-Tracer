@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "bvh.h"
 #include "triangle.h"
+#include "medium.h"
 #include "stb_image_write.h"
 #include "stats.h"
 
@@ -10,41 +11,37 @@
 #include <thread>
 
 const Vec3 up(0., 1., 0.);
-const int SamplesPerPixel = 40;
+const int SamplesPerPixel = 3000;
 const int maxDepth = 40;
+const int scene = 2;
 const bool sky = false;
+const Vec3 skyDown(.18, .09, .03), skyUp(0., 0., 0.);
 
 Camera camera;
 int imgWidth, imgHeight;
-Scalar fogDensity, fogHeight, fogRadius;
 
-Color rayColor(const Ray &ray, const Hittable *world) {
-	Vec3 color(0., 0., 0.), mult(1., 1., 1.);
+void rayColor(const Ray &ray, const Hittable *world, Color &color) {
+	Vec3 mult(1., 1., 1.);
 	Ray currentRay = ray;
-	for(int depth = 0; depth < maxDepth; ++depth) {
-		HitRecord record;
-		if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
-			Color emitted, attenuation;
-			Ray scattered;
-			if(record.hittable->scatter(currentRay, record, emitted, attenuation, scattered)) {
-				Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(currentRay.origin().y + scattered.origin().y)/fogHeight));
-				color += mult * emitted;
-				mult *= fogCoeff * attenuation;
-				if(mult.maxCoeff() < 1e-5) break;
+	int depth = 0;
+	HitRecord record;
+	rayTrace:
+	if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
+		Color emitted, attenuation;
+		Ray scattered;
+		bool newRay = record.hittable->scatter(currentRay, record, emitted, attenuation, scattered);
+		color += mult * emitted;
+		if(newRay && ++depth < maxDepth) {
+			mult *= attenuation;
+			if(mult.maxCoeff() > 1e-5) {
 				currentRay = scattered;
-			} else {
-				color += mult * emitted;
-				break;
+				goto rayTrace;
 			}
-		} else if(sky) {
-			Scalar rayFogDist = currentRay.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - currentRay.origin().y) / currentRay.direction().y);
-			Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - currentRay.origin().y/fogHeight));
-			Scalar t = .5 * (currentRay.direction().y + 1.);
-			color += mult * fogCoeff * .42 * Color(.42-.42*t, .21-.21*t, .07-.07*t);
-			break;
-		} else break;
+		}
+	} else if(sky) {
+		Scalar t = .5 * (currentRay.direction.y + 1.);
+		color += mult * ((1.-t) * skyDown + t * skyUp);
 	}
-	return color;
 }
 
 HittableList randomScene(bool bunny = true, bool noisyGround = true) {
@@ -58,11 +55,6 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	camera = Camera(camPos, -camPos, up, fov, aspectRatio, aperture, 10.);
 	imgWidth = 1280;
 	imgHeight = imgWidth / aspectRatio;
-
-	// Fog
-	fogDensity = 2.e-2;
-	fogHeight = 8.;
-	fogRadius = 24.;
 
 	// Ground
 	if(noisyGround) world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
@@ -92,7 +84,8 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	}
 
 	// Big spheres or Bunny
-	if(bunny) loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.));
+	if(bunny) loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 90., 2., Vec3(4., .96, 1.),
+								std::make_shared<Metal>(Color(.53, .35, .05), .07));
 	else {
 		world.add(std::make_shared<Sphere>(Vec3(-4., 1., 0.), 1., std::make_shared<Lambertian>(Vec3(.4, .2, .1))));
 		world.add(std::make_shared<Sphere>(Vec3(0., .95, 0.), .95, std::make_shared<Dielectric>(1.5)));
@@ -115,28 +108,97 @@ HittableList cornellBox() {
 	const Scalar aperture = 3.;
 	const Vec3 camPos(278., 278., -800.);
 	const Vec3 direction(0., 0., 1.);
-	camera = Camera(camPos, direction, up, fov, 1., aperture, 800.);
+	camera = Camera(camPos, direction, up, fov, 1., aperture, 600.);
 	imgWidth = imgHeight = 720;
-
-	// Fog
-	fogDensity = 3.e-4;
-	fogHeight = 600.;
-	fogRadius = 600.;
 
 	// Materials
 	std::shared_ptr<Material>
 		red = std::make_shared<Lambertian>(Color(.65, .05, .05)),
 		white = std::make_shared<Lambertian>(Color(.73, .73, .73)),
 		green = std::make_shared<Lambertian>(Color(.12, .45, .15)),
-		light = std::make_shared<DiffuseLight>(Color(15., 15., 15.));
+		light = std::make_shared<DiffuseLight>(Color(7., 7., 7.));
 	
 	world.add(std::make_shared<Quad>(Vec3(555, 0, 0), Vec3(555, 0, 555), Vec3(555, 555, 0), green));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 555, 0), Vec3(0, 0, 555), red));
-	world.add(std::make_shared<Quad>(Vec3(213, 554, 227), Vec3(343, 554, 227), Vec3(213, 554, 332), light));
+	world.add(std::make_shared<Quad>(Vec3(113, 554, 127), Vec3(443, 554, 127), Vec3(113, 554, 432), light));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 555), Vec3(555, 555, 555), Vec3(0, 0, 555), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 0, 555), Vec3(555, 0, 0), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 0), Vec3(555, 555, 0), Vec3(0, 555, 555), white));
-	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 180., 320., Vec3(278., 153., 320.));
+
+	// loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 180., 320., Vec3(278., 153., 320.),
+	// 	std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.09)));
+	std::shared_ptr<HittableList> box1 = std::make_shared<HittableList>();
+	addBoxRotY(*box1, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., white);
+	world.add(std::make_shared<ConstantMedium>(box1, .01, Color(0., 0., 0.)));
+	std::shared_ptr<HittableList> box2 = std::make_shared<HittableList>();
+	addBoxRotY(*box2, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
+	world.add(std::make_shared<ConstantMedium>(box2, .01, Color(1., 1., 1.)));
+	
+	return world;
+}
+
+HittableList nextWeekScene() {
+	HittableList world;
+
+	// Camera
+	const Scalar fov = 40.;
+	const Scalar aperture = 3.;
+	const Vec3 camPos(478., 278., -600.);
+	const Vec3 direction(-200., 0., 600.);
+	camera = Camera(camPos, direction, up, fov, 1., aperture, 600.);
+	imgWidth = imgHeight = 720;
+
+	// Ground
+	std::shared_ptr<Material> groundMat = std::make_shared<Lambertian>(Color(.48, .83, .53));
+	const int boxesPerSide = 20;
+	const Scalar boxWidth = 100.;
+	for(int i = 0; i < boxesPerSide; ++i) {
+		for(int j = 0; j < boxesPerSide; ++j) {
+			const Vec3 a(boxWidth * (i - .5 * boxesPerSide), 0., boxWidth * (j - .5 * boxesPerSide));
+			const Scalar y = i == 10 && j == 12 ? 105. : Random::realRange(1., 100.);
+			addBoxRotY(world, Vec3(boxWidth, y, boxWidth), a, 0., groundMat);
+		}
+	}
+
+	// Bunny
+	loadOBJ("../meshes/bunny.obj", world, up, 180., 125., Vec3(60., 165.5, 250.),
+								std::make_shared<Metal>(Color(.53, .35, .05), .07));
+
+	// Light
+	world.add(std::make_shared<Quad>(Vec3(123, 554, 147), Vec3(423, 554, 147), Vec3(113, 554, 412),
+								std::make_shared<DiffuseLight>(Color(7., 7., 7.))));
+	
+	// Some spheres
+	std::shared_ptr<Material> glassMat = std::make_shared<Dielectric>(1.5);
+	world.add(std::make_shared<Sphere>(Vec3(415., 400., 200.), 50.,
+								std::make_shared<Lambertian>(Color(.7, .3, .1))));
+	world.add(std::make_shared<Sphere>(Vec3(260., 150., 45.), 50., glassMat));
+	world.add(std::make_shared<Sphere>(Vec3(0., 150., 145.), 50.,
+								std::make_shared<Metal>(Color(.8, .8, .9), .8)));
+	world.add(std::make_shared<Sphere>(Vec3(400., 200., 400.), 100.,
+								std::make_shared<Lambertian>(std::make_shared<ImageTexture>("../textures/earthmap.jpg"))));
+	world.add(std::make_shared<Sphere>(Vec3(220., 280., 300.), 80.,
+								std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.1))));
+
+	// Medium
+	std::shared_ptr<Hittable> mediumBound = std::make_shared<Sphere>(Vec3(360., 150., 145.), 70., glassMat);
+	world.add(mediumBound);
+	world.add(std::make_shared<ConstantMedium>(mediumBound, .5, Color(.2, .4, .9)));
+	mediumBound = std::make_shared<Sphere>(Vec3(0., 0., 0.), 2000., glassMat);
+	world.add(std::make_shared<ConstantMedium>(mediumBound, 1e-4, Color(1., 1., 1.)));
+
+	// Many balls
+	HittableList ballBox;
+	std::shared_ptr<Material> white = std::make_shared<Lambertian>(Color(.73, .73, .73));
+	const int nBalls = 1000;
+	const Scalar angle = -15. * M_PI / 180.;
+	const Scalar co = std::cos(angle), si = std::sin(angle);
+	for(int i = 0; i < nBalls; ++i) {
+		Vec3 r = Vec3::randomRange(0., 165.);
+		if(r.y > 10. && r.y < 158. && std::max(r.x, 165.-r.z) < 140.) continue;
+		ballBox.add(std::make_shared<Sphere>(Vec3(-100. + r.x*co - r.z*si, 270. + r.y, 395. + r.x*si + r.z*co), 10., white));
+	}
+	world.add(std::make_shared<BVHNode>(ballBox));
 	
 	return world;
 }
@@ -160,17 +222,17 @@ void work() {
 				y += ay;
 				x += i - std::floor(x);
 				y += j - std::floor(y);
-				col += rayColor(camera.getRay(x / imgWidth, y / imgHeight), world);
+				rayColor(camera.getRay(x / imgWidth, y / imgHeight), world, col);
 			}
+			u_char* pix = img + 3 * (i + (imgHeight - 1 - j) * imgWidth);
 			col /= spp;
-			int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
 			col.x = std::max(1e-4, col.x);
 			col.y = std::max(1e-4, col.y);
 			col.z = std::max(1e-4, col.z);
 			Scalar mul = std::min(1., 1. / col.maxCoeff());
-			img[pix+0] = std::pow(.5 * (mul*col.x + std::min(.999, col.x)), 1./2.2) * 256.;
-			img[pix+1] = std::pow(.5 * (mul*col.y + std::min(.999, col.y)), 1./2.2) * 256.;
-			img[pix+2] = std::pow(.5 * (mul*col.z + std::min(.999, col.z)), 1./2.2) * 256.;
+			pix[0] = std::pow(.5 * (mul*col.x + std::min(.999, col.x)), 1./2.2) * 256.;
+			pix[1] = std::pow(.5 * (mul*col.y + std::min(.999, col.y)), 1./2.2) * 256.;
+			pix[2] = std::pow(.5 * (mul*col.z + std::min(.999, col.z)), 1./2.2) * 256.;
 		}
 	}
 	Stats::aggregateLocalStats();
@@ -199,8 +261,18 @@ void render() {
 
 int main() {
 	Random::init();
-	// HittableList list = randomScene(false, false);
-	HittableList list = cornellBox();
+	HittableList list;
+	switch(scene) {
+	case 0:
+		list = randomScene(false, false);
+		break;
+	case 1:
+		list = cornellBox();
+		break;
+	default:
+		list = nextWeekScene();
+		break;
+	}
 	world = new BVHNode(list);
 	// world = new BVHTree(list);
 	img = new u_char[imgWidth * imgHeight * 3];

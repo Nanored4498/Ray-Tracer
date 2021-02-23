@@ -8,35 +8,35 @@ thread_local unsigned long long Stats::localHitBoxTest = 0uLL;
 bool AABB::hit(const Ray &ray, Scalar tMax, Scalar &t) const {
 	UPDATE_BOX_STATS
 	t = EPS;
-	Scalar invD = 1. / ray.direction().x, t0, t1;
+	Scalar invD = 1. / ray.direction.x, t0, t1;
 	if(invD < 0.) {
-		t0 = invD * (maxi.x - ray.origin().x);
-		t1 = invD * (mini.x - ray.origin().x);
+		t0 = invD * (maxi.x - ray.origin.x);
+		t1 = invD * (mini.x - ray.origin.x);
 	} else {
-		t0 = invD * (mini.x - ray.origin().x);
-		t1 = invD * (maxi.x - ray.origin().x);
+		t0 = invD * (mini.x - ray.origin.x);
+		t1 = invD * (maxi.x - ray.origin.x);
 	}
 	if(t0 > t) t = t0;
 	if(t1 < tMax) tMax = t1;
 	if(tMax <= t) return false;
-	invD = 1. / ray.direction().y;
+	invD = 1. / ray.direction.y;
 	if(invD < 0.) {
-		t0 = invD * (maxi.y - ray.origin().y);
-		t1 = invD * (mini.y - ray.origin().y);
+		t0 = invD * (maxi.y - ray.origin.y);
+		t1 = invD * (mini.y - ray.origin.y);
 	} else {
-		t0 = invD * (mini.y - ray.origin().y);
-		t1 = invD * (maxi.y - ray.origin().y);
+		t0 = invD * (mini.y - ray.origin.y);
+		t1 = invD * (maxi.y - ray.origin.y);
 	}
 	if(t0 > t) t = t0;
 	if(t1 < tMax) tMax = t1;
 	if(tMax <= t) return false;
-	invD = 1. / ray.direction().z;
+	invD = 1. / ray.direction.z;
 	if(invD < 0.) {
-		t0 = invD * (maxi.z - ray.origin().z);
-		t1 = invD * (mini.z - ray.origin().z);
+		t0 = invD * (maxi.z - ray.origin.z);
+		t1 = invD * (mini.z - ray.origin.z);
 	} else {
-		t0 = invD * (mini.z - ray.origin().z);
-		t1 = invD * (maxi.z - ray.origin().z);
+		t0 = invD * (mini.z - ray.origin.z);
+		t1 = invD * (maxi.z - ray.origin.z);
 	}
 	if(t0 > t) t = t0;
 	if(t1 < tMax) tMax = t1;
@@ -47,32 +47,32 @@ bool AABB::hitInv(const Ray &ray, Scalar tMax, Scalar &t) const {
 	UPDATE_BOX_STATS
 	t = EPS;
 	Scalar t0, t1;
-	if(ray.direction().x < 0.) {
-		t0 = ray.direction().x * (maxi.x - ray.origin().x);
-		t1 = ray.direction().x * (mini.x - ray.origin().x);
+	if(ray.direction.x < 0.) {
+		t0 = ray.direction.x * (maxi.x - ray.origin.x);
+		t1 = ray.direction.x * (mini.x - ray.origin.x);
 	} else {
-		t0 = ray.direction().x * (mini.x - ray.origin().x);
-		t1 = ray.direction().x * (maxi.x - ray.origin().x);
+		t0 = ray.direction.x * (mini.x - ray.origin.x);
+		t1 = ray.direction.x * (maxi.x - ray.origin.x);
 	}
 	if(t0 > t) t = t0;
 	if(t1 < tMax) tMax = t1;
 	if(tMax <= t) return false;
-	if(ray.direction().y < 0.) {
-		t0 = ray.direction().y * (maxi.y - ray.origin().y);
-		t1 = ray.direction().y * (mini.y - ray.origin().y);
+	if(ray.direction.y < 0.) {
+		t0 = ray.direction.y * (maxi.y - ray.origin.y);
+		t1 = ray.direction.y * (mini.y - ray.origin.y);
 	} else {
-		t0 = ray.direction().y * (mini.y - ray.origin().y);
-		t1 = ray.direction().y * (maxi.y - ray.origin().y);
+		t0 = ray.direction.y * (mini.y - ray.origin.y);
+		t1 = ray.direction.y * (maxi.y - ray.origin.y);
 	}
 	if(t0 > t) t = t0;
 	if(t1 < tMax) tMax = t1;
 	if(tMax <= t) return false;
-	if(ray.direction().z < 0.) {
-		t0 = ray.direction().z * (maxi.z - ray.origin().z);
-		t1 = ray.direction().z * (mini.z - ray.origin().z);
+	if(ray.direction.z < 0.) {
+		t0 = ray.direction.z * (maxi.z - ray.origin.z);
+		t1 = ray.direction.z * (mini.z - ray.origin.z);
 	} else {
-		t0 = ray.direction().z * (mini.z - ray.origin().z);
-		t1 = ray.direction().z * (maxi.z - ray.origin().z);
+		t0 = ray.direction.z * (mini.z - ray.origin.z);
+		t1 = ray.direction.z * (maxi.z - ray.origin.z);
 	}
 	if(t0 > t) t = t0;
 	if(t1 < tMax) tMax = t1;

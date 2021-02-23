@@ -64,26 +64,26 @@ bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	UPDATE_TRIANGLE_STATS
 	Scalar t, u, v;
 	if(fixedColumn == 0) {
-		t = - (ray.origin().x + invT[6] * ray.origin().y + invT[7] * ray.origin().z + invT[8])
-					/ (ray.direction().x + invT[6] * ray.direction().y + invT[7] * ray.direction().z);
+		t = - (ray.origin.x + invT[6] * ray.origin.y + invT[7] * ray.origin.z + invT[8])
+					/ (ray.direction.x + invT[6] * ray.direction.y + invT[7] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar py = ray.origin().y + t * ray.direction().y, pz = ray.origin().z + t * ray.direction().z;
+		Scalar py = ray.origin.y + t * ray.direction.y, pz = ray.origin.z + t * ray.direction.z;
 		u = invT[0] * py + invT[1] * pz + invT[2];
 		if(u < 0.) return false;
 		v = invT[3] * py + invT[4] * pz + invT[5];
 	} else if(fixedColumn == 1) {
-		t = - (invT[7] * ray.origin().x + ray.origin().y + invT[6] * ray.origin().z + invT[8])
-					/ (invT[7] * ray.direction().x + ray.direction().y + invT[6] * ray.direction().z);
+		t = - (invT[7] * ray.origin.x + ray.origin.y + invT[6] * ray.origin.z + invT[8])
+					/ (invT[7] * ray.direction.x + ray.direction.y + invT[6] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin().x + t * ray.direction().x, pz = ray.origin().z + t * ray.direction().z;
+		Scalar px = ray.origin.x + t * ray.direction.x, pz = ray.origin.z + t * ray.direction.z;
 		u = invT[0] * pz + invT[1] * px + invT[2];
 		if(u < 0.) return false;
 		v = invT[3] * pz + invT[4] * px  + invT[5];
 	} else {
-		t = - (invT[6] * ray.origin().x + invT[7] * ray.origin().y + ray.origin().z + invT[8])
-					/ (invT[6] * ray.direction().x + invT[7] * ray.direction().y + ray.direction().z);
+		t = - (invT[6] * ray.origin.x + invT[7] * ray.origin.y + ray.origin.z + invT[8])
+					/ (invT[6] * ray.direction.x + invT[7] * ray.direction.y + ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin().x + t * ray.direction().x, py = ray.origin().y + t * ray.direction().y;
+		Scalar px = ray.origin.x + t * ray.direction.x, py = ray.origin.y + t * ray.direction.y;
 		u = invT[0] * px + invT[1] * py + invT[2];
 		if(u < 0.) return false;
 		v = invT[3] * px + invT[4] * py + invT[5];
@@ -98,26 +98,26 @@ bool Quad::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	UPDATE_TRIANGLE_STATS
 	Scalar t, u, v;
 	if(fixedColumn == 0) {
-		t = - (ray.origin().x + invT[6] * ray.origin().y + invT[7] * ray.origin().z + invT[8])
-					/ (ray.direction().x + invT[6] * ray.direction().y + invT[7] * ray.direction().z);
+		t = - (ray.origin.x + invT[6] * ray.origin.y + invT[7] * ray.origin.z + invT[8])
+					/ (ray.direction.x + invT[6] * ray.direction.y + invT[7] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar py = ray.origin().y + t * ray.direction().y, pz = ray.origin().z + t * ray.direction().z;
+		Scalar py = ray.origin.y + t * ray.direction.y, pz = ray.origin.z + t * ray.direction.z;
 		u = invT[0] * py + invT[1] * pz + invT[2];
 		if(u < 0. || u > 1.) return false;
 		v = invT[3] * py + invT[4] * pz + invT[5];
 	} else if(fixedColumn == 1) {
-		t = - (invT[7] * ray.origin().x + ray.origin().y + invT[6] * ray.origin().z + invT[8])
-					/ (invT[7] * ray.direction().x + ray.direction().y + invT[6] * ray.direction().z);
+		t = - (invT[7] * ray.origin.x + ray.origin.y + invT[6] * ray.origin.z + invT[8])
+					/ (invT[7] * ray.direction.x + ray.direction.y + invT[6] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin().x + t * ray.direction().x, pz = ray.origin().z + t * ray.direction().z;
+		Scalar px = ray.origin.x + t * ray.direction.x, pz = ray.origin.z + t * ray.direction.z;
 		u = invT[0] * pz + invT[1] * px + invT[2];
 		if(u < 0. || u > 1.) return false;
 		v = invT[3] * pz + invT[4] * px  + invT[5];
 	} else {
-		t = - (invT[6] * ray.origin().x + invT[7] * ray.origin().y + ray.origin().z + invT[8])
-					/ (invT[6] * ray.direction().x + invT[7] * ray.direction().y + ray.direction().z);
+		t = - (invT[6] * ray.origin.x + invT[7] * ray.origin.y + ray.origin.z + invT[8])
+					/ (invT[6] * ray.direction.x + invT[7] * ray.direction.y + ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin().x + t * ray.direction().x, py = ray.origin().y + t * ray.direction().y;
+		Scalar px = ray.origin.x + t * ray.direction.x, py = ray.origin.y + t * ray.direction.y;
 		u = invT[0] * px + invT[1] * py + invT[2];
 		if(u < 0. || u > 1.) return false;
 		v = invT[3] * px + invT[4] * py + invT[5];
@@ -129,7 +129,7 @@ bool Quad::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	} else return false;
 }
 
-void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos) {
+void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos, std::shared_ptr<Material> material) {
 	std::ifstream ifs(fileName);
 	std::string word;
 	std::vector<Vec3> vertices;
@@ -167,9 +167,27 @@ void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxi
 		v = pos + scale * (dot(v, z) * z + (vx * co - vy * si) * x + (vx * si + vy * co) * y);
 	}
 
-	std::shared_ptr<Material> mat = std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.09));
 	for(const auto &[i, j, k] : faces)
-		list.add(std::make_shared<Triangle>(vertices[i-1], vertices[j-1], vertices[k-1],
-					mat));
-					// std::make_shared<Metal>(Vec3(.52+.04*Random::real(), .35+.03*Random::real(), .05+.01*Random::real()), .08*Random::real())));
+		list.add(std::make_shared<Triangle>(vertices[i-1], vertices[j-1], vertices[k-1], material));
+}
+
+void addBox(HittableList &list, const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, std::shared_ptr<const Material> material, bool biface) {
+	const Vec3 bc = b + c - a;
+	const Vec3 bd = b + d - a;
+	const Vec3 cd = c + d - a;
+	list.add(std::make_shared<Quad>(a, c, b, material, biface));
+	list.add(std::make_shared<Quad>(a, b, d, material, biface));
+	list.add(std::make_shared<Quad>(a, d, c, material, biface));
+	list.add(std::make_shared<Quad>(b, bc, bd, material, biface));
+	list.add(std::make_shared<Quad>(c, cd, bc, material, biface));
+	list.add(std::make_shared<Quad>(d, bd, cd, material, biface));
+}
+
+void addBoxRotY(HittableList &list, const Vec3 &size, const Vec3 &pos, Scalar angle, std::shared_ptr<const Material> material, bool biface) {
+	angle *= M_PI / 180.;
+	const Scalar co = std::cos(angle), si = std::sin(angle);
+	const Vec3 b = pos + size.x * Vec3(co, 0., si);
+	const Vec3 c = pos + size.y * Vec3(0., 1., 0.);
+	const Vec3 d = pos + size.z * Vec3(-si, 0., co);
+	addBox(list, pos, b, c, d, material, biface);
 }

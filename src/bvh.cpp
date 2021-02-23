@@ -86,7 +86,7 @@ struct qComp {
 };
 
 bool BVHTree::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
-	Ray rayInv(ray.origin(), 1. / ray.direction());
+	Ray rayInv(ray.origin, 1. / ray.direction);
 	bool anyHit = false;
 	std::priority_queue<QElement, std::vector<QElement>, qComp> Q;
 	Q.emplace(EPS, root.get());

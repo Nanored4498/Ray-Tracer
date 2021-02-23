@@ -13,7 +13,7 @@ public:
 	}
 
 	inline Vec3 getNormal(const Vec3 &, const Ray &ray) const override {
-		return biface && dot(normal, ray.direction()) > 0. ? -normal : normal;
+		return biface && dot(normal, ray.direction) > 0. ? -normal : normal;
 	}
 
 	inline Vec2 getUV(const Vec3 &pos, const Vec3 &) const override {
@@ -40,4 +40,6 @@ public:
 	bool hit(const Ray &ray, Scalar tMax, HitRecord &record) const override;
 };
 
-void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos);
+void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos, std::shared_ptr<Material> material);
+void addBox(HittableList &list, const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, std::shared_ptr<const Material> material, bool biface=false);
+void addBoxRotY(HittableList &list, const Vec3 &size, const Vec3 &pos, Scalar angle, std::shared_ptr<const Material> material, bool biface=false);

@@ -119,11 +119,9 @@ typedef Vec3 Color;
 
 class Ray {
 public:
+	Vec3 origin, direction;
+
 	Ray() = default;
-	Ray(const Vec3 &origin, const Vec3 &direction): _origin(origin), _direction(direction) {}
-	inline const Vec3& origin() const { return _origin; }
-	inline const Vec3& direction() const { return _direction; }
-	inline Vec3 at(Scalar t) const { return _origin + t * _direction; }
-private:
-	Vec3 _origin, _direction;
+	Ray(const Vec3 &origin, const Vec3 &direction): origin(origin), direction(direction) {}
+	inline Vec3 at(Scalar t) const { return origin + t * direction; }
 };
