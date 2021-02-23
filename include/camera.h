@@ -7,6 +7,8 @@ public:
 
 	Ray getRay(Scalar x, Scalar y) const;
 
+	const Vec3& getPos() const { return pos; }
+
 private:
 	Vec3 pos, corner, horizontal, vertical;
 	Vec3 u, v;

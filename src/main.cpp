@@ -10,41 +10,54 @@
 #include <thread>
 
 const Vec3 up(0., 1., 0.);
-const int SamplesPerPixel = 40;
-const int maxDepth = 40;
+const int SamplesPerPixel = 500;
+const int maxDepth = 30;
 const bool sky = false;
 
+Scalar focalDistance;
 Camera camera;
 int imgWidth, imgHeight;
 Scalar fogDensity, fogHeight, fogRadius;
 
-Color rayColor(const Ray &ray, const Hittable *world) {
-	Vec3 color(0., 0., 0.), mult(1., 1., 1.);
+struct PixelData {
+	Color color, emit, att;
+	Vec3 pos, normal;
+};
+
+void rayColor(const Ray &ray, const Hittable *world, PixelData &data) {
+	Vec3 mult(1., 1., 1.);
 	Ray currentRay = ray;
-	for(int depth = 0; depth < maxDepth; ++depth) {
-		HitRecord record;
-		if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
-			Color emitted, attenuation;
-			Ray scattered;
-			if(record.hittable->scatter(currentRay, record, emitted, attenuation, scattered)) {
-				Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(currentRay.origin().y + scattered.origin().y)/fogHeight));
-				color += mult * emitted;
-				mult *= fogCoeff * attenuation;
-				if(mult.maxCoeff() < 1e-5) break;
+	int depth = 0;
+	HitRecord record;
+	rayTrace:
+	if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
+		Color emitted, attenuation;
+		Ray scattered;
+		bool newRay = record.hittable->scatter(currentRay, record, emitted, attenuation, scattered);
+		if(depth == 0) {
+			data.emit += emitted;
+			data.att += attenuation;
+			Vec3 pos = currentRay.at(record.t);
+			data.pos += pos;
+			data.normal += record.hittable->getNormal(pos, currentRay);
+		}
+		data.color += mult * emitted;
+		if(newRay && ++depth < maxDepth) {
+			Scalar fogCoeff = std::exp(- fogDensity * record.t * (1. - .5*(currentRay.origin().y + scattered.origin().y)/fogHeight));
+			mult *= fogCoeff * attenuation;
+			if(mult.maxCoeff() > 1e-5) {
 				currentRay = scattered;
-			} else {
-				color += mult * emitted;
-				break;
+				goto rayTrace;
 			}
-		} else if(sky) {
-			Scalar rayFogDist = currentRay.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - currentRay.origin().y) / currentRay.direction().y);
-			Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - currentRay.origin().y/fogHeight));
-			Scalar t = .5 * (currentRay.direction().y + 1.);
-			color += mult * fogCoeff * .42 * Color(.42-.42*t, .21-.21*t, .07-.07*t);
-			break;
-		} else break;
+		}
+	} else if(sky) {
+		Scalar rayFogDist = currentRay.direction().y < 0. ? fogRadius : std::min(fogRadius, (fogHeight - currentRay.origin().y) / currentRay.direction().y);
+		Scalar fogCoeff = std::exp(- fogDensity * rayFogDist * .5 * (1. - currentRay.origin().y/fogHeight));
+		Scalar t = .5 * (currentRay.direction().y + 1.);
+		Color skyE = .42 * Color(.42-.42*t, .21-.21*t, .07-.07*t);
+		if(depth == 0) data.emit += skyE;
+		data.color += mult * fogCoeff * skyE;
 	}
-	return color;
 }
 
 HittableList randomScene(bool bunny = true, bool noisyGround = true) {
@@ -55,7 +68,8 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	const Scalar aperture = 0.09;
 	const Scalar aspectRatio = 16. / 9.;
 	const Vec3 camPos(13.6, 2., 3.6);
-	camera = Camera(camPos, -camPos, up, fov, aspectRatio, aperture, 10.);
+	focalDistance = 10.;
+	camera = Camera(camPos, -camPos, up, fov, aspectRatio, aperture, focalDistance);
 	imgWidth = 1280;
 	imgHeight = imgWidth / aspectRatio;
 
@@ -115,7 +129,8 @@ HittableList cornellBox() {
 	const Scalar aperture = 3.;
 	const Vec3 camPos(278., 278., -800.);
 	const Vec3 direction(0., 0., 1.);
-	camera = Camera(camPos, direction, up, fov, 1., aperture, 800.);
+	focalDistance = 600.;
+	camera = Camera(camPos, direction, up, fov, 1., aperture, focalDistance);
 	imgWidth = imgHeight = 720;
 
 	// Fog
@@ -143,8 +158,10 @@ HittableList cornellBox() {
 
 Hittable *world;
 u_char *img;
+PixelData *data;
 std::atomic<int> I;
 int spp = 4;
+int totSPP = 0;
 
 void work() {
 	const Scalar phi = 1.324717957244746026;
@@ -154,23 +171,14 @@ void work() {
 	Scalar y = Random::real();
 	for(int i = I++; i < imgWidth; i = I++) {
 		for(int j = 0; j < imgHeight; ++j) {
-			Color col(0., 0., 0.);
+			PixelData &pd = data[i + (imgHeight - 1 - j) * imgWidth];
 			for(int s = 0; s < spp; ++s) {
 				x += ax;
 				y += ay;
 				x += i - std::floor(x);
 				y += j - std::floor(y);
-				col += rayColor(camera.getRay(x / imgWidth, y / imgHeight), world);
+				rayColor(camera.getRay(x / imgWidth, y / imgHeight), world, pd);
 			}
-			col /= spp;
-			int pix = 3 * (i + (imgHeight - 1 - j) * imgWidth);
-			col.x = std::max(1e-4, col.x);
-			col.y = std::max(1e-4, col.y);
-			col.z = std::max(1e-4, col.z);
-			Scalar mul = std::min(1., 1. / col.maxCoeff());
-			img[pix+0] = std::pow(.5 * (mul*col.x + std::min(.999, col.x)), 1./2.2) * 256.;
-			img[pix+1] = std::pow(.5 * (mul*col.y + std::min(.999, col.y)), 1./2.2) * 256.;
-			img[pix+2] = std::pow(.5 * (mul*col.z + std::min(.999, col.z)), 1./2.2) * 256.;
 		}
 	}
 	Stats::aggregateLocalStats();
@@ -185,6 +193,7 @@ void render() {
 	for(int i = 0; i < T; ++i) threads[i] = std::thread(work);
 	work();
 	for(int i = 0; i < T; ++i) threads[i].join();
+	totSPP += spp;
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -197,21 +206,78 @@ void render() {
 	#endif
 }
 
+inline void color2uhar(const Vec3 &col, u_char *pix) {
+	Scalar r = std::max(1e-4, col.x);
+	Scalar g = std::max(1e-4, col.y);
+	Scalar b = std::max(1e-4, col.z);
+	Scalar mul = std::min(1., 1. / col.maxCoeff());
+	pix[0] = std::pow(.5 * (mul*r + std::min(.999, r)), 1./2.2) * 256.;
+	pix[1] = std::pow(.5 * (mul*g + std::min(.999, g)), 1./2.2) * 256.;
+	pix[2] = std::pow(.5 * (mul*b + std::min(.999, b)), 1./2.2) * 256.;
+}
+
 int main() {
 	Random::init();
 	// HittableList list = randomScene(false, false);
 	HittableList list = cornellBox();
 	world = new BVHNode(list);
 	// world = new BVHTree(list);
-	img = new u_char[imgWidth * imgHeight * 3];
+	size_t imgSize = imgWidth * imgHeight;
+	data = new PixelData[imgSize];
+	img = new u_char[imgSize * 3];
 
 	render();
+	for(size_t i = 0; i < imgSize; ++i) color2uhar(data[i].color / totSPP, img + 3*i);
 	stbi_write_png("pre.png", imgWidth, imgHeight, 3, img, 0);
 	spp = SamplesPerPixel;
 	render();
+
+	const int h = 10;
+	const double iSigmaP = 3e3, iSigmaN = 1e2;
+	Vec3 minPos(1e9, 1e9, 1e9), maxPos(-1e9, -1e9, -1e9);
+	for(size_t i = 0; i < imgSize; ++i) {
+		PixelData &pd = data[i];
+		pd.color = pd.att.maxCoeff() < 1e-6 ? Vec3(0., 0., 0.) : (pd.color - pd.emit) / pd.att;
+		pd.att /= totSPP;
+		pd.emit /= totSPP;
+		pd.normal /= totSPP;
+		pd.pos = (pd.pos / totSPP - camera.getPos()) / focalDistance;
+		minPos = min(minPos, pd.pos);
+		maxPos = max(maxPos, pd.pos);
+	}
+	maxPos -= minPos;
+	for(int i = 0; i < (int) imgSize; ++i) {
+		Scalar sw = 0.;
+		Color in(0., 0., 0.);
+		int x = i % imgWidth, y = i / imgWidth;
+		int af = std::min(imgWidth, x+h+1);
+		int bf = std::min(imgHeight, y+h+1);
+		for(int a = std::max(0, x-h); a < af; ++a) {
+			for(int b = std::max(0, y-h); b < bf; ++b) {
+				int j = a + b * imgWidth;
+				if(data[j].color.maxCoeff() == 0.) continue;
+				Scalar w = std::exp(- iSigmaP * (data[i].pos - data[j].pos).norm2() - iSigmaN * (data[i].normal - data[j].normal).norm2());
+				sw += w;
+				in += w * data[j].color;
+			}
+		}
+		if(sw > 0.) in /= sw;
+		color2uhar(data[i].emit + data[i].att * in, img + 3*i);
+	}
 	stbi_write_png("out.png", imgWidth, imgHeight, 3, img, 0);
+	if(1) {
+		for(size_t i = 0; i < imgSize; ++i) color2uhar(data[i].att, img + 3*i);
+		stbi_write_png("att.png", imgWidth, imgHeight, 3, img, 0);
+		for(size_t i = 0; i < imgSize; ++i) color2uhar(data[i].color, img + 3*i);
+		stbi_write_png("incident.png", imgWidth, imgHeight, 3, img, 0);
+		for(size_t i = 0; i < imgSize; ++i) color2uhar(.5 * (data[i].normal + Vec3(1., 1., 1.)), img + 3*i);
+		stbi_write_png("normal.png", imgWidth, imgHeight, 3, img, 0);
+		for(size_t i = 0; i < imgSize; ++i) color2uhar((data[i].pos - minPos) / maxPos, img + 3*i);
+		stbi_write_png("pos.png", imgWidth, imgHeight, 3, img, 0);
+	}
 
 	delete world;
+	delete[] data;
 	delete[] img;
 
 	return 0;
