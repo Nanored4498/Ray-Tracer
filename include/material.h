@@ -1,6 +1,5 @@
 #pragma once
 
-#include "vec.h"
 #include "texture.h"
 
 #include <memory>

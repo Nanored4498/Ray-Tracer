@@ -1,4 +1,5 @@
 #include "texture.h"
+#include "hittable.h"
 
 #include "stb_image.h"
 
@@ -14,7 +15,7 @@ NoiseTexture::NoiseTexture(double scale): scale(scale) {
 	}
 }
 
-Color NoiseTexture::value(Scalar, Scalar, const Vec3 &p) const {
+Color NoiseTexture::value(const Hittable *, const Vec3 &p, const Vec3 &) const {
 	const int depth = 6;
 	Scalar gray = 0., fr = scale, weight = 1.;
 	for(int d = 0; d < depth; ++d) {
@@ -54,11 +55,10 @@ ImageTexture::ImageTexture(std::string fileName) {
 		throw std::runtime_error("Failed to load the file " + fileName + "!!!");
 	}
 }
-
-Color ImageTexture::value(Scalar u, Scalar v, const Vec3 &) const {
-	if(data == nullptr) return Color(0., 1., 1.);
-	v = 1. - v;
-	int i = std::min(int(u * W), W-1), j = std::min(int(v * H), H-1);
+#include <iostream>
+Color ImageTexture::value(const Hittable *hittable, const Vec3 &p, const Vec3 &normal) const {
+	Vec2 uv = hittable->getUV(p, normal);
+	int i = std::min(int(uv.x * W), W-1), j = std::min(int((1. - uv.y) * H), H-1);
 	u_char* pix = data + C * (i + W * j);
 	const Scalar mult = 1. / 255.;
 	return Color(mult * pix[0], mult * pix[1], mult * pix[2]);

@@ -4,13 +4,34 @@ bool Lambertian::scatter(const Ray &ray, const HitRecord &record, Color &emitted
 	emitted.zero();
 	scattered.origin = ray.at(record.t);
 	Vec3 normal = record.hittable->getNormal(scattered.origin, ray);
-	Vec2 uv = record.hittable->getUV(scattered.origin, normal);
-	attenuation = albedo->value(uv.x, uv.y, scattered.origin);
-	scattered.direction = Vec3::randomSphere();
-	scattered.direction -= dot(scattered.direction, normal) * normal;
-	Scalar z = Random::real();
-	scattered.direction *= std::sqrt(1. - z) / scattered.direction.norm();
-	scattered.direction += sqrt(z) * normal;
+	attenuation = albedo->value(record.hittable, scattered.origin, normal);
+	Scalar n = Random::real();
+	Scalar phi = 2. * M_PI * Random::real();
+	if(std::abs(normal.x) < std::abs(normal.y) && std::abs(normal.x) < std::abs(normal.z)) {
+		Scalar nyz = normal.y*normal.y + normal.z*normal.z;
+		Scalar o = std::sqrt(n / nyz);
+		Scalar co = o * std::cos(phi), si = o * std::sin(phi);
+		n = std::sqrt(1. - n);
+		scattered.direction.x = n * normal.x + si * nyz;
+		scattered.direction.y = n * normal.y + co * normal.z - si * normal.y * normal.x;
+		scattered.direction.z = n * normal.z - co * normal.y - si * normal.z * normal.x;
+	} else if(std::abs(normal.y) < std::abs(normal.z)) {
+		Scalar nzx = normal.z*normal.z + normal.x*normal.x;
+		Scalar o = std::sqrt(n / nzx);
+		Scalar co = o * std::cos(phi), si = o * std::sin(phi);
+		n = std::sqrt(1. - n);
+		scattered.direction.x = n * normal.x - co * normal.z - si * normal.x * normal.y;
+		scattered.direction.y = n * normal.y + si * nzx;
+		scattered.direction.z = n * normal.z + co * normal.x - si * normal.z * normal.y;
+	} else {
+		Scalar nxy = normal.x*normal.x + normal.y*normal.y;
+		Scalar o = std::sqrt(n / nxy);
+		Scalar co = o * std::cos(phi), si = o * std::sin(phi);
+		n = std::sqrt(1. - n);
+		scattered.direction.x = n * normal.x + co * normal.y - si * normal.x * normal.z;
+		scattered.direction.y = n * normal.y - co * normal.x - si * normal.y * normal.z;
+		scattered.direction.z = n * normal.z + si * nxy;
+	}
 	return true;
 }
 
@@ -47,9 +68,8 @@ bool Dielectric::scatter(const Ray &ray, const HitRecord &record, Color &emitted
 	return true;
 }
 
-bool DiffuseLight::scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &, Ray &) const {
-	Vec3 pos = ray.at(record.t), normal = record.hittable->getNormal(pos, ray);
-	Vec2 uv = record.hittable->getUV(pos, normal);
-	emitted = emit->value(uv.x, uv.y, pos);
+bool DiffuseLight::scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &, Ray &scattered) const {
+	scattered.origin = ray.at(record.t);
+	emitted = emit->value(record.hittable, scattered.origin, record.hittable->getNormal(scattered.origin, ray));
 	return false;
 }

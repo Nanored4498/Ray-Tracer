@@ -19,12 +19,22 @@ public:
 
 	inline Scalar norm2() const { return x*x + y*y; }
 
-	static Vec2 randomDisc() {
+	static inline Vec2 randomDisc() {
 		Scalar alpha = 2. * M_PI * Random::real();
 		Scalar r = std::sqrt(Random::real());
 		return Vec2(r * std::cos(alpha), r * std::sin(alpha));
 	}
+
+	static inline Vec2 randomDisc(Scalar R) {
+		Scalar alpha = 2. * M_PI * Random::real();
+		Scalar r = R * std::sqrt(Random::real());
+		return Vec2(r * std::cos(alpha), r * std::sin(alpha));
+	}
 };
+
+inline std::ostream& operator<<(std::ostream &stream, const Vec2 &v) {
+	return stream << v.x << ' ' << v.y;
+}
 
 class Vec3 {
 public:

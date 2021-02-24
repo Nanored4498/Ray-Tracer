@@ -2,9 +2,11 @@
 
 #include "vec.h"
 
+class Hittable;
+
 class Texture {
 public:
-	virtual Color value(Scalar u, Scalar v, const Vec3 &p) const = 0;
+	virtual Color value(const Hittable *hittable, const Vec3 &p, const Vec3 &normal) const = 0;
 };
 
 class SolidColor : public Texture {
@@ -12,7 +14,7 @@ public:
 	SolidColor(Scalar r, Scalar g, Scalar b): color(r, g, b) {}
 	SolidColor(const Color &color): color(color) {}
 
-	inline Color value(Scalar, Scalar, const Vec3 &) const override { return color; }
+	inline Color value(const Hittable *, const Vec3 &, const Vec3 &) const override { return color; }
 
 private:
 	Color color;
@@ -23,7 +25,7 @@ public:
 	CheckerTexture() {}
 	CheckerTexture(const Color &even, const Color &odd): even(even), odd(odd) {}
 
-	inline Color value(Scalar, Scalar, const Vec3& p) const override {
+	inline Color value(const Hittable *, const Vec3 &p, const Vec3 &) const override {
 		if((std::sin(8.*p.x) < 0.) ^ (std::sin(8.*p.y) < 0.) ^ (std::sin(8.*p.z) < 0.)) return odd;
 		else return even;
 	}
@@ -41,7 +43,7 @@ public:
 		delete[] perms[1];
 	}
 
-	Color value(Scalar u, Scalar v, const Vec3 &p) const override;
+	Color value(const Hittable *hittable, const Vec3 &p, const Vec3 &normal) const override;
 
 private:
 	static const int nbVals = 1<<8;
@@ -55,7 +57,7 @@ public:
 	ImageTexture(std::string fileName);
 	~ImageTexture() { if(data != nullptr) delete data; }
 
-	Color value(Scalar u, Scalar v, const Vec3 &p) const override;
+	Color value(const Hittable *hittable, const Vec3 &p, const Vec3 &normal) const override;
 
 private:
 	u_char *data;

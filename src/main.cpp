@@ -14,11 +14,11 @@ const Vec3 up(0., 1., 0.);
 const int SamplesPerPixel = 100;
 const int maxDepth = 30;
 const int scene = 1;
-const bool sky = false;
-const Vec3 skyDown(.18, .09, .03), skyUp(0., 0., 0.);
+const Vec3 skyDown(.12, .06, .02), skyUp(0., 0., 0.);
 
 Camera camera;
 int imgWidth, imgHeight;
+bool sky = false;
 
 void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 	Vec3 mult(1., 1., 1.);
@@ -55,6 +55,7 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	camera = Camera(camPos, -camPos, up, fov, aspectRatio, aperture, 10.);
 	imgWidth = 1280;
 	imgHeight = imgWidth / aspectRatio;
+	sky = true;
 
 	// Ground
 	if(noisyGround) world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
@@ -63,6 +64,7 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 						std::make_shared<Lambertian>(std::make_shared<CheckerTexture>(Color(.6, .6, .6), Color(1., .3, .1)))));
 
 	// Grid of spheres
+	std::shared_ptr<Material> glassMat = std::make_shared<Dielectric>(1.5);
 	for(int x = -10; x <= 9; ++x) {
 		for(int z = -8; z <= 4; ++z) {
 			Vec3 center(x + .66 * Random::real(), .2, z + .66 * Random::real());
@@ -78,7 +80,7 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 			if(rand_mat < .5) mat = std::make_shared<Lambertian>(Color::random() * Color::random());
 			else if(rand_mat < .8) mat = std::make_shared<Metal>(Color::randomRange(.5, 1.), Random::realRange(0., 0.5));
 			else if(rand_mat < .9) mat = std::make_shared<DiffuseLight>(Color::randomRange(.5, 2.8));
-			else mat = std::make_shared<Dielectric>(1.5);
+			else mat = glassMat;
 			world.add(std::make_shared<Sphere>(center, .2, mat));
 		}
 	}
@@ -96,6 +98,10 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	// Earth
 	world.add(std::make_shared<Sphere>(Vec3(4., 1.3, 2.7), .5,
 				std::make_shared<Lambertian>(std::make_shared<ImageTexture>("../textures/earthmap.jpg"))));
+
+	// Medium
+	std::shared_ptr<Hittable> mediumBound = std::make_shared<Sphere>(Vec3(0., -188., -2.), 200., glassMat);
+	world.add(std::make_shared<ConstantMedium>(mediumBound, 3e-3, Color(0., 0., 0.)));
 
 	return world;
 }
