@@ -11,8 +11,8 @@
 #include <thread>
 
 const Vec3 up(0., 1., 0.);
-const int SamplesPerPixel = 3000;
-const int maxDepth = 40;
+const int SamplesPerPixel = 5000;
+const int maxDepth = 20;
 const int scene = 2;
 const bool sky = false;
 const Vec3 skyDown(.18, .09, .03), skyUp(0., 0., 0.);
@@ -33,7 +33,7 @@ void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 		color += mult * emitted;
 		if(newRay && ++depth < maxDepth) {
 			mult *= attenuation;
-			if(mult.maxCoeff() > 1e-5) {
+			if(mult.maxCoeff() > 1e-4) {
 				currentRay = scattered;
 				goto rayTrace;
 			}
@@ -143,33 +143,40 @@ HittableList nextWeekScene() {
 	// Camera
 	const Scalar fov = 40.;
 	const Scalar aperture = 3.;
+	const Scalar aspectRatio = 1.;
 	const Vec3 camPos(478., 278., -600.);
 	const Vec3 direction(-200., 0., 600.);
-	camera = Camera(camPos, direction, up, fov, 1., aperture, 600.);
-	imgWidth = imgHeight = 720;
+	camera = Camera(camPos, direction, up, fov, aspectRatio, aperture, 600.);
+	imgWidth = 720;
+	imgHeight = imgWidth / aspectRatio;
 
 	// Ground
 	std::shared_ptr<Material> groundMat = std::make_shared<Lambertian>(Color(.48, .83, .53));
-	const int boxesPerSide = 20;
+	std::shared_ptr<Material> glassMat = std::make_shared<Dielectric>(1.5);
 	const Scalar boxWidth = 100.;
-	for(int i = 0; i < boxesPerSide; ++i) {
-		for(int j = 0; j < boxesPerSide; ++j) {
-			const Vec3 a(boxWidth * (i - .5 * boxesPerSide), 0., boxWidth * (j - .5 * boxesPerSide));
-			const Scalar y = i == 10 && j == 12 ? 105. : Random::realRange(1., 100.);
+	for(int i = -5; i < 8; ++i) {
+		for(int j = -2; j < 7; ++j) {
+			if(i == 0 && j == 2) continue;
+			const Vec3 a(boxWidth * i, 0., boxWidth * j);
+			const Scalar y = Random::realRange(1., 100.);
 			addBoxRotY(world, Vec3(boxWidth, y, boxWidth), a, 0., groundMat);
 		}
 	}
+	addBoxRotY(world, Vec3(.999*boxWidth, 106., .999*boxWidth), Vec3(.0005*boxWidth, 0., boxWidth * 2.0005), 0., glassMat);
+	world.add(std::make_shared<Sphere>(Vec3(50., 50., 250.), 25.,
+								std::make_shared<DiffuseLight>(Color(2., 2., 2.))));
 
 	// Bunny
-	loadOBJ("../meshes/bunny.obj", world, up, 180., 125., Vec3(60., 165.5, 250.),
+	HittableList bunny;
+	loadOBJ("../meshes/bunny.obj", bunny, up, 180., 140., Vec3(60., 175.336, 250.),
 								std::make_shared<Metal>(Color(.53, .35, .05), .07));
+	world.add(std::make_shared<BVHNode>(bunny));
 
 	// Light
 	world.add(std::make_shared<Quad>(Vec3(123, 554, 147), Vec3(423, 554, 147), Vec3(113, 554, 412),
 								std::make_shared<DiffuseLight>(Color(7., 7., 7.))));
 	
 	// Some spheres
-	std::shared_ptr<Material> glassMat = std::make_shared<Dielectric>(1.5);
 	world.add(std::make_shared<Sphere>(Vec3(415., 400., 200.), 50.,
 								std::make_shared<Lambertian>(Color(.7, .3, .1))));
 	world.add(std::make_shared<Sphere>(Vec3(260., 150., 45.), 50., glassMat));
@@ -183,9 +190,9 @@ HittableList nextWeekScene() {
 	// Medium
 	std::shared_ptr<Hittable> mediumBound = std::make_shared<Sphere>(Vec3(360., 150., 145.), 70., glassMat);
 	world.add(mediumBound);
-	world.add(std::make_shared<ConstantMedium>(mediumBound, .5, Color(.2, .4, .9)));
-	mediumBound = std::make_shared<Sphere>(Vec3(0., 0., 0.), 2000., glassMat);
-	world.add(std::make_shared<ConstantMedium>(mediumBound, 1e-4, Color(1., 1., 1.)));
+	world.add(std::make_shared<ConstantMedium>(mediumBound, .02, Color(.2, .4, .9)));
+	mediumBound = std::make_shared<Sphere>(Vec3(100., 50., 200.), 800., glassMat);
+	world.add(std::make_shared<ConstantMedium>(mediumBound, 8e-5, Color(1., 1., 1.)));
 
 	// Many balls
 	HittableList ballBox;
@@ -195,7 +202,7 @@ HittableList nextWeekScene() {
 	const Scalar co = std::cos(angle), si = std::sin(angle);
 	for(int i = 0; i < nBalls; ++i) {
 		Vec3 r = Vec3::randomRange(0., 165.);
-		if(r.y > 10. && r.y < 158. && std::max(r.x, 165.-r.z) < 140.) continue;
+		if(r.y > 10. && r.y < 158. && std::max(r.x, 165.-r.z) < 135. && std::max(165-r.x, r.z) > 40.) continue;
 		ballBox.add(std::make_shared<Sphere>(Vec3(-100. + r.x*co - r.z*si, 270. + r.y, 395. + r.x*si + r.z*co), 10., white));
 	}
 	world.add(std::make_shared<BVHNode>(ballBox));
@@ -206,7 +213,7 @@ HittableList nextWeekScene() {
 Hittable *world;
 u_char *img;
 std::atomic<int> I;
-int spp = 4;
+int spp = 5;
 
 void work() {
 	const Scalar phi = 1.324717957244746026;

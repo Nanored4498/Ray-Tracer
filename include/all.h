@@ -2,4 +2,4 @@
 
 typedef double Scalar;
 
-const Scalar EPS = 5e-6;
+const Scalar EPS = 1e-5;
