@@ -6,7 +6,11 @@ bool Lambertian::scatter(const Ray &ray, const HitRecord &record, Color &emitted
 	Vec3 normal = record.hittable->getNormal(scattered.origin, ray);
 	Vec2 uv = record.hittable->getUV(scattered.origin, normal);
 	attenuation = albedo->value(uv.x, uv.y, scattered.origin);
-	scattered.direction = (normal + Vec3::randomBall()).normalized();
+	scattered.direction = Vec3::randomSphere();
+	scattered.direction -= dot(scattered.direction, normal) * normal;
+	Scalar z = Random::real();
+	scattered.direction *= std::sqrt(1. - z) / scattered.direction.norm();
+	scattered.direction += sqrt(z) * normal;
 	return true;
 }
 

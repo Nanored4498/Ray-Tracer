@@ -43,14 +43,14 @@ public:
 	static Vec3 randomRange(Scalar a, Scalar b) {
 		return Vec3(Random::realRange(a, b), Random::realRange(a, b), Random::realRange(a, b));
 	}
-	static Vec3 randomBall() {
+	static inline Vec3 randomBall() {
 		Scalar phi = 2. * M_PI * Random::real();
 		Scalar cosTheta = 2. * Random::real() - 1.;
 		Scalar sinTheta = std::sqrt(1. - cosTheta*cosTheta);
 		Scalar r = std::cbrt(Random::real());
 		return Vec3(r * sinTheta * std::cos(phi), r * sinTheta * std::sin(phi), r * cosTheta);
 	}
-	static Vec3 randomSphere() {
+	static inline Vec3 randomSphere() {
 		Scalar phi = 2. * M_PI * Random::real();
 		Scalar cosTheta = 2. * Random::real() - 1.;
 		Scalar sinTheta = std::sqrt(1. - cosTheta*cosTheta);
@@ -67,6 +67,12 @@ public:
 		x += other.x;
 		y += other.y;
 		z += other.z;
+		return *this;
+	}
+	inline Vec3& operator-=(const Vec3 &other) {
+		x -= other.x;
+		y -= other.y;
+		z -= other.z;
 		return *this;
 	}
 	inline Vec3& operator*=(const Vec3 &other) {

@@ -11,9 +11,9 @@
 #include <thread>
 
 const Vec3 up(0., 1., 0.);
-const int SamplesPerPixel = 5000;
-const int maxDepth = 20;
-const int scene = 2;
+const int SamplesPerPixel = 100;
+const int maxDepth = 30;
+const int scene = 1;
 const bool sky = false;
 const Vec3 skyDown(.18, .09, .03), skyUp(0., 0., 0.);
 
@@ -116,23 +116,29 @@ HittableList cornellBox() {
 		red = std::make_shared<Lambertian>(Color(.65, .05, .05)),
 		white = std::make_shared<Lambertian>(Color(.73, .73, .73)),
 		green = std::make_shared<Lambertian>(Color(.12, .45, .15)),
-		light = std::make_shared<DiffuseLight>(Color(7., 7., 7.));
+		// light = std::make_shared<DiffuseLight>(Color(7., 7., 7.));
+		light = std::make_shared<DiffuseLight>(Color(15., 15., 15.));
 	
 	world.add(std::make_shared<Quad>(Vec3(555, 0, 0), Vec3(555, 0, 555), Vec3(555, 555, 0), green));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 555, 0), Vec3(0, 0, 555), red));
-	world.add(std::make_shared<Quad>(Vec3(113, 554, 127), Vec3(443, 554, 127), Vec3(113, 554, 432), light));
+	// world.add(std::make_shared<Quad>(Vec3(113, 554, 127), Vec3(443, 554, 127), Vec3(113, 554, 432), light));
+	world.add(std::make_shared<Quad>(Vec3(213, 554, 227), Vec3(343, 554, 227), Vec3(213, 554, 332), light));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 555), Vec3(555, 555, 555), Vec3(0, 0, 555), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 0, 555), Vec3(555, 0, 0), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 0), Vec3(555, 555, 0), Vec3(0, 555, 555), white));
 
-	// loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 180., 320., Vec3(278., 153., 320.),
-	// 	std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.09)));
+	/*
+	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 180., 320., Vec3(278., 153., 320.),
+			std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.09)));
 	std::shared_ptr<HittableList> box1 = std::make_shared<HittableList>();
 	addBoxRotY(*box1, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., white);
 	world.add(std::make_shared<ConstantMedium>(box1, .01, Color(0., 0., 0.)));
 	std::shared_ptr<HittableList> box2 = std::make_shared<HittableList>();
 	addBoxRotY(*box2, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
 	world.add(std::make_shared<ConstantMedium>(box2, .01, Color(1., 1., 1.)));
+	*/
+	addBoxRotY(world, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., white);
+	addBoxRotY(world, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
 	
 	return world;
 }
