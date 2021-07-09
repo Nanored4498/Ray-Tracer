@@ -2,9 +2,9 @@
 
 Camera::Camera(const Vec3 &pos, const Vec3 &direction, const Vec3 &up, Scalar fov, Scalar aspectRatio, Scalar aperture, Scalar focusDistance): pos(pos) {
 	fov *= M_PI / 180.;
-	Scalar width = 2. * std::tan(fov / 2.);
-	Scalar height = width / aspectRatio;
-	Vec3 w = direction.normalized();
+	const Scalar width = 2. * std::tan(fov / 2.);
+	const Scalar height = width / aspectRatio;
+	const Vec3 w = direction.normalized();
 
 	u = cross(w, up);
 	u /= u.norm();
@@ -18,7 +18,7 @@ Camera::Camera(const Vec3 &pos, const Vec3 &direction, const Vec3 &up, Scalar fo
 }
 
 Ray Camera::getRay(Scalar x, Scalar y) const {
-	Vec2 offset = Vec2::randomDisc(lensRadius);
-	Vec3 origin = pos + offset.x * u + offset.y * v;
+	const Vec2 offset = Vec2::randomDisc(lensRadius);
+	const Vec3 origin = pos + offset.x * u + offset.y * v;
 	return Ray(origin, (corner + x * horizontal + y * vertical - origin).normalized());
 }

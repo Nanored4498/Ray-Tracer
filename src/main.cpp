@@ -10,37 +10,46 @@
 #include <iostream>
 #include <thread>
 
+constexpr int SamplesPerPixel = 100;
+constexpr int maxDepth = 30;
+constexpr int scene = 1;
 const Vec3 up(0., 1., 0.);
-const int SamplesPerPixel = 100;
-const int maxDepth = 30;
-const int scene = 1;
-const Vec3 skyDown(.12, .06, .02), skyUp(0., 0., 0.);
+
+constexpr bool scene_sky[3] { true, false, false };
+constexpr bool sky = scene_sky[scene];
+const Vec3 skyDown(.15, .05, .01), skyUp(0.03, 0.02, 0.01);
+const Vec3 skyDiff = skyUp - skyDown;
+
+constexpr Scalar scene_fog[3] { 2.e-2, 1.e-4, 1.e-4 };
+constexpr Scalar fogMul = - scene_fog[scene];
 
 Camera camera;
 int imgWidth, imgHeight;
-bool sky = false;
 
+constexpr Scalar MIN_MULT = 2.e-4;
 void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 	Vec3 mult(1., 1., 1.);
 	Ray currentRay = ray;
 	int depth = 0;
+	Scalar tot_dist = 0.;
 	HitRecord record;
 	rayTrace:
 	if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
 		Color emitted, attenuation;
 		Ray scattered;
-		bool newRay = record.hittable->scatter(currentRay, record, emitted, attenuation, scattered);
-		color += mult * emitted;
+		const bool newRay = record.hittable->scatter(currentRay, record, emitted, attenuation, scattered);
+		tot_dist += record.t;
+		if(emitted != Vec3(0., 0., 0.)) color += std::exp(fogMul * tot_dist) * mult * emitted;
 		if(newRay && ++depth < maxDepth) {
 			mult *= attenuation;
-			if(mult.maxCoeff() > 1e-4) {
+			if(std::exp(fogMul * tot_dist) * mult.maxCoeff() > MIN_MULT) {
 				currentRay = scattered;
 				goto rayTrace;
 			}
 		}
-	} else if(sky) {
-		Scalar t = .5 * (currentRay.direction.y + 1.);
-		color += mult * ((1.-t) * skyDown + t * skyUp);
+	} else if constexpr(sky) {
+		const Scalar t = .5 * (currentRay.direction.y + 1.);
+		color += mult * (skyDown + t * skyDiff);
 	}
 }
 
@@ -55,13 +64,12 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	camera = Camera(camPos, -camPos, up, fov, aspectRatio, aperture, 10.);
 	imgWidth = 1280;
 	imgHeight = imgWidth / aspectRatio;
-	sky = true;
 
 	// Ground
 	if(noisyGround) world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
 								std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(4.))));
 	else world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
-						std::make_shared<Lambertian>(std::make_shared<CheckerTexture>(Color(.6, .6, .6), Color(1., .3, .1)))));
+						std::make_shared<Lambertian>(std::make_shared<CheckerTexture>(Color(.75, .75, .75), Color(1., .3, .1)))));
 
 	// Grid of spheres
 	std::shared_ptr<Material> glassMat = std::make_shared<Dielectric>(1.5);
@@ -98,11 +106,7 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	// Earth
 	world.add(std::make_shared<Sphere>(Vec3(4., 1.3, 2.7), .5,
 				std::make_shared<Lambertian>(std::make_shared<ImageTexture>("../textures/earthmap.jpg"))));
-
-	// Medium
-	std::shared_ptr<Hittable> mediumBound = std::make_shared<Sphere>(Vec3(0., -188., -2.), 200., glassMat);
-	world.add(std::make_shared<ConstantMedium>(mediumBound, 3e-3, Color(0., 0., 0.)));
-
+	
 	return world;
 }
 
@@ -228,9 +232,12 @@ std::atomic<int> I;
 int spp = 5;
 
 void work() {
-	const Scalar phi = 1.324717957244746026;
-	const Scalar ax = 1. / phi;
-	const Scalar ay = ax*ax;
+	Random::init();
+	constexpr Scalar phi = 1.324717957244746026;
+	constexpr Scalar ax = 1. / phi;
+	constexpr Scalar ay = ax*ax;
+	const Scalar mulX = 1. / imgWidth;
+	const Scalar mulY = 1. / imgHeight;
 	Scalar x = Random::real();
 	Scalar y = Random::real();
 	for(int i = I++; i < imgWidth; i = I++) {
@@ -238,17 +245,17 @@ void work() {
 			Color col(0., 0., 0.);
 			for(int s = 0; s < spp; ++s) {
 				x += ax;
+				if(x > 1.) x -= 1.;
 				y += ay;
-				x += i - std::floor(x);
-				y += j - std::floor(y);
-				rayColor(camera.getRay(x / imgWidth, y / imgHeight), world, col);
+				if(y > 1.) y -= 1.;
+				rayColor(camera.getRay((i+x) * mulX, (j+y) * mulY), world, col);
 			}
 			u_char* pix = img + 3 * (i + (imgHeight - 1 - j) * imgWidth);
 			col /= spp;
 			col.x = std::max(1e-4, col.x);
 			col.y = std::max(1e-4, col.y);
 			col.z = std::max(1e-4, col.z);
-			Scalar mul = std::min(1., 1. / col.maxCoeff());
+			const Scalar mul = std::min(1., 1. / col.maxCoeff());
 			pix[0] = std::pow(.5 * (mul*col.x + std::min(.999, col.x)), 1./2.2) * 256.;
 			pix[1] = std::pow(.5 * (mul*col.y + std::min(.999, col.y)), 1./2.2) * 256.;
 			pix[2] = std::pow(.5 * (mul*col.z + std::min(.999, col.z)), 1./2.2) * 256.;

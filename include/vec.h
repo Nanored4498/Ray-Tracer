@@ -20,14 +20,14 @@ public:
 	inline Scalar norm2() const { return x*x + y*y; }
 
 	static inline Vec2 randomDisc() {
-		Scalar alpha = 2. * M_PI * Random::real();
-		Scalar r = std::sqrt(Random::real());
+		const Scalar alpha = Random::angle();
+		const Scalar r = std::sqrt(Random::real());
 		return Vec2(r * std::cos(alpha), r * std::sin(alpha));
 	}
 
 	static inline Vec2 randomDisc(Scalar R) {
-		Scalar alpha = 2. * M_PI * Random::real();
-		Scalar r = R * std::sqrt(Random::real());
+		const Scalar alpha = Random::angle();
+		const Scalar r = R * std::sqrt(Random::real());
 		return Vec2(r * std::cos(alpha), r * std::sin(alpha));
 	}
 };
@@ -54,16 +54,16 @@ public:
 		return Vec3(Random::realRange(a, b), Random::realRange(a, b), Random::realRange(a, b));
 	}
 	static inline Vec3 randomBall() {
-		Scalar phi = 2. * M_PI * Random::real();
-		Scalar cosTheta = 2. * Random::real() - 1.;
-		Scalar sinTheta = std::sqrt(1. - cosTheta*cosTheta);
-		Scalar r = std::cbrt(Random::real());
+		const Scalar phi = Random::angle();
+		const Scalar cosTheta = Random::realNeg();
+		const Scalar sinTheta = std::sqrt(1. - cosTheta*cosTheta);
+		const Scalar r = std::cbrt(Random::real());
 		return Vec3(r * sinTheta * std::cos(phi), r * sinTheta * std::sin(phi), r * cosTheta);
 	}
 	static inline Vec3 randomSphere() {
-		Scalar phi = 2. * M_PI * Random::real();
-		Scalar cosTheta = 2. * Random::real() - 1.;
-		Scalar sinTheta = std::sqrt(1. - cosTheta*cosTheta);
+		const Scalar phi = Random::angle();
+		const Scalar cosTheta = Random::realNeg();
+		const Scalar sinTheta = std::sqrt(1. - cosTheta*cosTheta);
 		return Vec3(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
 	}
 
@@ -107,6 +107,8 @@ public:
 		z /= scalar;
 		return *this;
 	}
+
+	inline bool operator!=(const Vec3 &other) const { return x != other.x || y != other.y || z != other.z; }
 
 	inline Scalar norm() const { return std::sqrt(x*x + y*y + z*z); }
 	inline Scalar norm2() const { return x*x + y*y + z*z; }

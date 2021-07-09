@@ -62,71 +62,74 @@ Quad::Quad(const Vec3 &a, const Vec3 &b, const Vec3 &c, std::shared_ptr<const Ma
 
 bool Triangle::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	UPDATE_TRIANGLE_STATS
-	Scalar t, u, v;
+	Scalar t;
 	if(fixedColumn == 0) {
 		t = - (ray.origin.x + invT[6] * ray.origin.y + invT[7] * ray.origin.z + invT[8])
 					/ (ray.direction.x + invT[6] * ray.direction.y + invT[7] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar py = ray.origin.y + t * ray.direction.y, pz = ray.origin.z + t * ray.direction.z;
-		u = invT[0] * py + invT[1] * pz + invT[2];
+		const Scalar py = ray.origin.y + t * ray.direction.y, pz = ray.origin.z + t * ray.direction.z;
+		const Scalar u = invT[0] * py + invT[1] * pz + invT[2];
 		if(u < 0.) return false;
-		v = invT[3] * py + invT[4] * pz + invT[5];
+		const Scalar v = invT[3] * py + invT[4] * pz + invT[5];
+		if(v < 0. || u + v > 1.) return false;
 	} else if(fixedColumn == 1) {
 		t = - (invT[7] * ray.origin.x + ray.origin.y + invT[6] * ray.origin.z + invT[8])
 					/ (invT[7] * ray.direction.x + ray.direction.y + invT[6] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin.x + t * ray.direction.x, pz = ray.origin.z + t * ray.direction.z;
-		u = invT[0] * pz + invT[1] * px + invT[2];
+		const Scalar px = ray.origin.x + t * ray.direction.x, pz = ray.origin.z + t * ray.direction.z;
+		const Scalar u = invT[0] * pz + invT[1] * px + invT[2];
 		if(u < 0.) return false;
-		v = invT[3] * pz + invT[4] * px  + invT[5];
+		const Scalar v = invT[3] * pz + invT[4] * px  + invT[5];
+		if(v < 0. || u + v > 1.) return false;
 	} else {
 		t = - (invT[6] * ray.origin.x + invT[7] * ray.origin.y + ray.origin.z + invT[8])
 					/ (invT[6] * ray.direction.x + invT[7] * ray.direction.y + ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin.x + t * ray.direction.x, py = ray.origin.y + t * ray.direction.y;
-		u = invT[0] * px + invT[1] * py + invT[2];
+		const Scalar px = ray.origin.x + t * ray.direction.x, py = ray.origin.y + t * ray.direction.y;
+		const Scalar u = invT[0] * px + invT[1] * py + invT[2];
 		if(u < 0.) return false;
-		v = invT[3] * px + invT[4] * py + invT[5];
+		const Scalar v = invT[3] * px + invT[4] * py + invT[5];
+		if(v < 0. || u + v > 1.) return false;
 	}
-	if(v >= 0. && u + v <= 1.) {
-		record.hittable = this;
-		record.t = t;
-		return true;
-	} else return false;
+	record.hittable = this;
+	record.t = t;
+	return true;
 }
+
 bool Quad::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	UPDATE_TRIANGLE_STATS
-	Scalar t, u, v;
+	Scalar t;
 	if(fixedColumn == 0) {
 		t = - (ray.origin.x + invT[6] * ray.origin.y + invT[7] * ray.origin.z + invT[8])
 					/ (ray.direction.x + invT[6] * ray.direction.y + invT[7] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar py = ray.origin.y + t * ray.direction.y, pz = ray.origin.z + t * ray.direction.z;
-		u = invT[0] * py + invT[1] * pz + invT[2];
+		const Scalar py = ray.origin.y + t * ray.direction.y, pz = ray.origin.z + t * ray.direction.z;
+		const Scalar u = invT[0] * py + invT[1] * pz + invT[2];
 		if(u < 0. || u > 1.) return false;
-		v = invT[3] * py + invT[4] * pz + invT[5];
+		const Scalar v = invT[3] * py + invT[4] * pz + invT[5];
+		if(v < 0. || v > 1.) return false;
 	} else if(fixedColumn == 1) {
 		t = - (invT[7] * ray.origin.x + ray.origin.y + invT[6] * ray.origin.z + invT[8])
 					/ (invT[7] * ray.direction.x + ray.direction.y + invT[6] * ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin.x + t * ray.direction.x, pz = ray.origin.z + t * ray.direction.z;
-		u = invT[0] * pz + invT[1] * px + invT[2];
+		const Scalar px = ray.origin.x + t * ray.direction.x, pz = ray.origin.z + t * ray.direction.z;
+		const Scalar u = invT[0] * pz + invT[1] * px + invT[2];
 		if(u < 0. || u > 1.) return false;
-		v = invT[3] * pz + invT[4] * px  + invT[5];
+		const Scalar v = invT[3] * pz + invT[4] * px  + invT[5];
+		if(v < 0. || v > 1.) return false;
 	} else {
 		t = - (invT[6] * ray.origin.x + invT[7] * ray.origin.y + ray.origin.z + invT[8])
 					/ (invT[6] * ray.direction.x + invT[7] * ray.direction.y + ray.direction.z);
 		if(t <= EPS || t >= tMax) return false;
-		Scalar px = ray.origin.x + t * ray.direction.x, py = ray.origin.y + t * ray.direction.y;
-		u = invT[0] * px + invT[1] * py + invT[2];
+		const Scalar px = ray.origin.x + t * ray.direction.x, py = ray.origin.y + t * ray.direction.y;
+		const Scalar u = invT[0] * px + invT[1] * py + invT[2];
 		if(u < 0. || u > 1.) return false;
-		v = invT[3] * px + invT[4] * py + invT[5];
+		const Scalar v = invT[3] * px + invT[4] * py + invT[5];
+		if(v < 0. || v > 1.) return false;
 	}
-	if(v >= 0. && v <= 1.) {
-		record.hittable = this;
-		record.t = t;
-		return true;
-	} else return false;
+	record.hittable = this;
+	record.t = t;
+	return true;
 }
 
 void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxis, Scalar angle, Scalar scale, const Vec3 &pos, std::shared_ptr<Material> material) {
