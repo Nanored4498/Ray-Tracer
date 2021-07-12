@@ -8,6 +8,7 @@ class Hittable;
 struct HitRecord {
 	const Hittable *hittable;
 	Scalar t;
+	Vec3 normal;
 };
 
 class Hittable {
@@ -20,10 +21,11 @@ public:
 	bool hitBoxInv(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hitInv(ray, tMax, t); }
 	const AABB& boundingBox() const { return box; }
 
-	inline virtual bool scatter(const Ray &, const HitRecord &, Color &emitted, Color &, Ray &) const {
+	inline virtual bool scatter(UNUSUED const Ray &ray, UNUSUED const HitRecord &record, Color &emitted, UNUSUED Color &attenuation, UNUSUED Ray &scattered) const {
 		emitted.zero();
 		return false;
 	}
+	inline virtual double scattering_pdf(UNUSUED const Ray &scattered, UNUSUED const Vec3 &normal) const { return 0.; }
 
 	virtual Vec3 getNormal(const Vec3 &pos, const Ray &ray) const = 0;
 

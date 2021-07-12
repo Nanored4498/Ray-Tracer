@@ -116,13 +116,13 @@ public:
 
 	inline Scalar minCoeff() const { return std::min(x, std::min(y, z)); }
 	inline Scalar maxCoeff() const { return std::max(x, std::max(y, z)); }
+
+	inline friend Scalar dot(const Vec3 &u, const Vec3 &v) { return u.x*v.x + u.y*v.y + u.z*v.z; }
+	inline friend Vec3 cross(const Vec3 &u, const Vec3 &v) { return Vec3(u.y*v.z-u.z*v.y, u.z*v.x-u.x*v.z, u.x*v.y-u.y*v.x); }
 };
 
 inline Vec3 operator*(Scalar scalar, const Vec3 &v) { return Vec3(scalar*v.x, scalar*v.y, scalar*v.z); }
 inline Vec3 operator/(Scalar scalar, const Vec3 &v) { return Vec3(scalar/v.x, scalar/v.y, scalar/v.z); }
-
-inline Scalar dot(const Vec3 &u, const Vec3 &v) { return u.x*v.x + u.y*v.y + u.z*v.z; }
-inline Vec3 cross(const Vec3 &u, const Vec3 &v) { return Vec3(u.y*v.z-u.z*v.y, u.z*v.x-u.x*v.z, u.x*v.y-u.y*v.x); }
 
 inline Vec3 min(const Vec3 &u, const Vec3 &v) { return Vec3(std::min(u.x, v.x), std::min(u.y, v.y), std::min(u.z, v.z)); }
 inline Vec3 max(const Vec3 &u, const Vec3 &v) { return Vec3(std::max(u.x, v.x), std::max(u.y, v.y), std::max(u.z, v.z)); }

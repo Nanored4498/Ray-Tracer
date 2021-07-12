@@ -11,16 +11,16 @@
 #include <thread>
 
 constexpr int SamplesPerPixel = 100;
-constexpr int maxDepth = 30;
+constexpr int maxDepth = 40;
 constexpr int scene = 1;
 const Vec3 up(0., 1., 0.);
 
 constexpr bool scene_sky[3] { true, false, false };
 constexpr bool sky = scene_sky[scene];
-const Vec3 skyDown(.15, .05, .01), skyUp(0.03, 0.02, 0.01);
+const Vec3 skyDown(.36, .08, .0), skyUp(.023, .004, .0);
 const Vec3 skyDiff = skyUp - skyDown;
 
-constexpr Scalar scene_fog[3] { 2.e-2, 1.e-4, 1.e-4 };
+constexpr Scalar scene_fog[3] { 2.e-2, 5.e-5, 1.e-4 };
 constexpr Scalar fogMul = - scene_fog[scene];
 
 Camera camera;
@@ -37,13 +37,28 @@ void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 	if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
 		Color emitted, attenuation;
 		Ray scattered;
+		scattered.origin = currentRay.at(record.t);
+		record.normal = record.hittable->getNormal(scattered.origin, currentRay);
 		const bool newRay = record.hittable->scatter(currentRay, record, emitted, attenuation, scattered);
 		tot_dist += record.t;
-		if(emitted != Vec3(0., 0., 0.)) color += std::exp(fogMul * tot_dist) * mult * emitted;
+		const double fogCoeff = std::exp(fogMul * tot_dist);
+		if(emitted != Vec3(0., 0., 0.)) color += fogCoeff * mult * emitted;
 		if(newRay && ++depth < maxDepth) {
 			mult *= attenuation;
-			if(std::exp(fogMul * tot_dist) * mult.maxCoeff() > MIN_MULT) {
+			if(fogCoeff * mult.maxCoeff() > MIN_MULT) {
 				currentRay = scattered;
+				// === TMP ===
+				if(Random::real() < .5) {
+					currentRay.direction = Vec3(Random::realRange(213., 343.), 554., Random::realRange(227., 332.)) - currentRay.origin;
+					if(dot(currentRay.direction, record.normal) < 0.) return;
+					const double inv_d2 = 1. / currentRay.direction.norm2();
+					currentRay.direction *= std::sqrt(inv_d2);
+					const double light_cos = std::abs(currentRay.direction.y);
+					if(light_cos < MIN_MULT) return;
+					const double inv_pdf = (343.-213.) * (332.-227.) * light_cos * inv_d2;
+					mult *= record.hittable->scattering_pdf(currentRay, record.normal) * inv_pdf;
+				}
+				// ===========
 				goto rayTrace;
 			}
 		}
