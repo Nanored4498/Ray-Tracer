@@ -10,7 +10,7 @@
 #include <iostream>
 #include <thread>
 
-constexpr int SamplesPerPixel = 1000;
+constexpr int SamplesPerPixel = 80;
 constexpr int maxDepth = 40;
 constexpr int scene = 1;
 const Vec3 up(0., 1., 0.);
@@ -26,86 +26,53 @@ constexpr Scalar fogMul = - scene_fog[scene];
 Camera camera;
 int imgWidth, imgHeight;
 
-Vec3 emitInDir(const Vec3 &normal, const double power) {
-	const Scalar cn = std::pow(Random::real(), 1. / (power + 1.));
-	const Scalar phi = Random::angle();
-	const Scalar ax = std::abs(normal.x), ay = std::abs(normal.y), az = std::abs(normal.z);
-	if(ax < ay && ax < az) {
-		const Scalar nyz = normal.y*normal.y + normal.z*normal.z;
-		const Scalar o = std::sqrt((1. - cn*cn) / nyz);
-		const Scalar co = o * std::cos(phi), si = o * std::sin(phi);
-		return Vec3(
-			cn * normal.x +                 si * nyz,
-			cn * normal.y + co * normal.z - si * normal.y * normal.x,
-			cn * normal.z - co * normal.y - si * normal.z * normal.x
-		);
-	} else if(ay < az) {
-		const Scalar nzx = normal.z*normal.z + normal.x*normal.x;
-		const Scalar o = std::sqrt((1. - cn*cn) / nzx);
-		const Scalar co = o * std::cos(phi), si = o * std::sin(phi);
-		return Vec3(
-			cn * normal.x - co * normal.z - si * normal.x * normal.y,
-			cn * normal.y +                 si * nzx,
-			cn * normal.z + co * normal.x - si * normal.z * normal.y
-		);
-	} else {
-		const Scalar nxy = normal.x*normal.x + normal.y*normal.y;
-		const Scalar o = std::sqrt((1. - cn*cn) / nxy);
-		const Scalar co = o * std::cos(phi), si = o * std::sin(phi);
-		return Vec3(
-			cn * normal.x + co * normal.y - si * normal.x * normal.z,
-			cn * normal.y - co * normal.x - si * normal.y * normal.z,
-			cn * normal.z +                 si * nxy
-		);
-	}
-}
-
-double pdfInDir(const Vec3 &normal, const double power, const Vec3 &dir) {
-	const Scalar cosTheta = dot(normal, dir);
-	return cosTheta <= 0. ? 0. : std::pow(cosTheta, power) * (power + 1.) * (.5 * (1. / M_PI));
-}
-
-constexpr Scalar MIN_MULT = 2.e-4;
+constexpr Scalar MIN_MULT = 1.e-4;
 void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 	Vec3 mult(1., 1., 1.);
 	Ray currentRay = ray;
 	int depth = 0;
 	Scalar tot_dist = 0.;
 	HitRecord record;
+	ScatterRecord scatter;
 	rayTrace:
 	if(world->hit(currentRay, std::numeric_limits<Scalar>::max(), record)) {
-		Color emitted, attenuation;
-		Ray scattered;
-		scattered.origin = currentRay.at(record.t);
-		record.normal = record.hittable->getNormal(scattered.origin, currentRay);
-		const bool newRay = record.hittable->scatter(currentRay, record, emitted, attenuation, scattered);
+		// Compute origin and normal
+		scatter.ray.origin = currentRay.at(record.t);
+		record.normal = record.hittable->getNormal(scatter.ray.origin, currentRay);
+		// Scatter
+		const bool newRay = record.hittable->scatter(currentRay, record, scatter);
+		// Update color and mult
 		tot_dist += record.t;
 		const Scalar fogCoeff = std::exp(fogMul * tot_dist);
-		if(emitted != Vec3(0., 0., 0.)) color += fogCoeff * mult * emitted;
-		if(newRay && ++depth < maxDepth) {
-			mult *= attenuation;
-			if(fogCoeff * mult.maxCoeff() > MIN_MULT) {
-				currentRay = scattered;
-				// === TMP ===
-				constexpr Scalar P = .4;
-				Vec3 lightDir = Vec3(.5*(213.+343.), 554., .5*(227.+332.)) - currentRay.origin;
-				const Scalar lightDiam = 150.;
-				const Scalar lightPowerMul = 10. / (lightDiam * lightDiam);
-				const Scalar lightDist = lightDir.norm();
-				lightDir /= lightDist;
-				const Scalar power = lightDist * lightDist * lightPowerMul;
-				if(Random::real() < P) {
-					currentRay.direction = emitInDir(lightDir, power);
-					if(dot(currentRay.direction, lightDir) <= 0.) return;
-				}
-				const Scalar pdf0 = record.hittable->scattering_pdf(currentRay, record.normal);
-				const Scalar pdf1 = pdfInDir(lightDir, power, currentRay.direction);
-				const Scalar mix_pdf = (1. - P) * pdf0 + P * pdf1;
-				mult *= pdf0 / mix_pdf;
-				// ===========
-				goto rayTrace;
-			}
+		if(scatter.emitted != Vec3(0., 0., 0.)) color += fogCoeff * mult * scatter.emitted;
+		if(!newRay || ++depth >= maxDepth) return;
+		mult *= scatter.attenuation;
+		if(fogCoeff * mult.maxCoeff() < MIN_MULT) return;
+		// Compute new ray
+		if(scatter.isSpecular) currentRay = scatter.ray;
+		else {
+			currentRay.origin = scatter.ray.origin;
+			// === TMP ===
+			constexpr Scalar P = .4;
+			Vec3 lightDir = Vec3(.5*(213.+343.), 554., .5*(227.+332.)) - currentRay.origin;
+			const Scalar lightDiam = 150.;
+			const Scalar lightPowerMul = 10. / (lightDiam * lightDiam);
+			const Scalar lightDist = lightDir.norm();
+			lightDir /= lightDist;
+			const Scalar power = lightDist * lightDist * lightPowerMul;
+			CosinePDF lightPDF(power);
+			if(Random::real() < P) {
+				currentRay.direction = lightPDF.generate(lightDir);
+				if(dot(currentRay.direction, lightDir) <= 0.) return;
+			} else currentRay.direction = scatter.pdf->generate(record.normal);
+			const Scalar pdf0 = scatter.pdf->value(record.normal, currentRay.direction);
+			const Scalar pdf1 = lightPDF.value(lightDir, currentRay.direction);
+			const Scalar mix_pdf = (1. - P) * pdf0 + P * pdf1;
+			mult *= record.hittable->scattering_pdf(record.normal, currentRay.direction) / mix_pdf;
+			if(fogCoeff * mult.maxCoeff() < MIN_MULT) return;
+			// ===========
 		}
+		goto rayTrace;
 	} else if constexpr(sky) {
 		const Scalar t = .5 * (currentRay.direction.y + 1.);
 		color += mult * (skyDown + t * skyDiff);
@@ -290,8 +257,8 @@ u_char *img;
 std::atomic<int> I;
 int spp = 5;
 
-void work() {
-	Random::init();
+void work(const int thread_num) {
+	Random::init(thread_num);
 	constexpr Scalar phi = 1.324717957244746026;
 	constexpr Scalar ax = 1. / phi;
 	constexpr Scalar ay = ax*ax;
@@ -329,8 +296,8 @@ void render() {
 	I = 0;
 	int T = (int) std::thread::hardware_concurrency() - 1;
 	std::vector<std::thread> threads(T);
-	for(int i = 0; i < T; ++i) threads[i] = std::thread(work);
-	work();
+	for(int i = 0; i < T; ++i) threads[i] = std::thread(work, i);
+	work(T);
 	for(int i = 0; i < T; ++i) threads[i].join();
 
 	auto end = std::chrono::high_resolution_clock::now();
@@ -345,7 +312,7 @@ void render() {
 }
 
 int main() {
-	Random::init();
+	Random::init(0);
 	HittableList list;
 	switch(scene) {
 	case 0:

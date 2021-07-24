@@ -21,11 +21,11 @@ public:
 	bool hitBoxInv(const Ray &ray, Scalar tMax, Scalar &t) const { return box.hitInv(ray, tMax, t); }
 	const AABB& boundingBox() const { return box; }
 
-	inline virtual bool scatter(UNUSUED const Ray &ray, UNUSUED const HitRecord &record, Color &emitted, UNUSUED Color &attenuation, UNUSUED Ray &scattered) const {
-		emitted.zero();
+	inline virtual bool scatter(UNUSUED const Ray &ray, UNUSUED const HitRecord &record, ScatterRecord &out) const {
+		out.emitted.zero();
 		return false;
 	}
-	inline virtual Scalar scattering_pdf(UNUSUED const Ray &scattered, UNUSUED const Vec3 &normal) const { return 0.; }
+	inline virtual Scalar scattering_pdf(UNUSUED const Vec3 &normal, UNUSUED const Vec3 &scattered) const { return 0.; }
 
 	virtual Vec3 getNormal(const Vec3 &pos, const Ray &ray) const = 0;
 

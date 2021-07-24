@@ -21,9 +21,10 @@ bool ConstantMedium::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	return true;
 }
 
-bool ConstantMedium::scatter(UNUSUED const Ray &ray, UNUSUED const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const {
-	emitted.zero();
-	attenuation = color;
-	scattered.direction = Vec3::randomSphere();
+bool ConstantMedium::scatter(UNUSUED const Ray &ray, UNUSUED const HitRecord &record, ScatterRecord &out) const {
+	out.emitted.zero();
+	out.attenuation = color;
+	out.isSpecular = false;
+	out.pdf = UniformPDF::instance;
 	return true;
 }
