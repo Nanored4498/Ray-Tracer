@@ -1,6 +1,7 @@
 #include "pdf.h"
 
-const PDF* UniformPDF::instance = new UniformPDF();
+const UniformPDF uniformPDF;
+const PDF* UniformPDF::instance = &uniformPDF;
 
 Vec3 CosinePDF::generate(const Vec3 &normal) const {
 	const Scalar cn = std::pow(Random::real(), 1. / (power + 1.));

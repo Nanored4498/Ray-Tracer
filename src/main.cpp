@@ -17,11 +17,34 @@ const Vec3 up(0., 1., 0.);
 
 constexpr bool scene_sky[3] { true, false, false };
 constexpr bool sky = scene_sky[scene];
-const Vec3 skyDown(.32, .07, .0), skyUp(.02, .004, .0);
+const Vec3 skyDown(.2, .05, .005), skyUp(.016, .004, .0);
 const Vec3 skyDiff = skyUp - skyDown;
 
-constexpr Scalar scene_fog[3] { 1.3e-2, 5.e-5, 1.e-4 };
+constexpr Scalar scene_fog[3] { 1.45e-2, 2.e-5, 2.e-5 };
 constexpr Scalar fogMul = - scene_fog[scene];
+
+struct ImportantPoint {
+	Vec3 pos;
+	Scalar powerMul;
+	Scalar priority;
+
+	ImportantPoint(const Vec3 &pos, Scalar D, Scalar priority):
+		pos(pos), powerMul(8. / (D*D)), priority(priority) {}
+
+	inline std::pair<CosinePDF, Vec3> getPDF(const Vec3 &from) const {
+		const Vec3 dir = pos - from;
+		const Scalar dist2 = dir.norm2();
+		const Scalar power = std::min(80., dist2 * powerMul);
+		return { CosinePDF(power), dir / std::sqrt(dist2) };
+	}
+
+	inline Scalar getPDFVal(const Ray &ray) const {
+		const auto &[pdf, pdf_dir] = getPDF(ray.origin);
+		return pdf.value(pdf_dir, ray.direction);
+	}
+};
+std::vector<ImportantPoint> importantPoints;
+Scalar priority_sum = 1.;
 
 Camera camera;
 int imgWidth, imgHeight;
@@ -52,25 +75,24 @@ void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 		if(scatter.isSpecular) currentRay = scatter.ray;
 		else {
 			currentRay.origin = scatter.ray.origin;
-			// === TMP ===
-			Vec3 lightDir = Vec3(.5*(213.+343.), 554., .5*(227.+332.)) - currentRay.origin;
-			const Scalar lightDiam = 150.;
-			const Scalar lightPowerMul = 8. / (lightDiam * lightDiam);
-			const Scalar lightDist = lightDir.norm();
-			lightDir /= lightDist;
-			const Scalar power = std::min(80., lightDist * lightDist * lightPowerMul);
-			const CosinePDF lightPDF(power);
-			const Scalar P = std::min(.5, std::max(0., .3 + .3*dot(lightDir, record.normal)));
-			if(Random::real() < P) {
-				currentRay.direction = lightPDF.generate(lightDir);
-				if(dot(currentRay.direction, lightDir) <= 0.) return;
-			} else currentRay.direction = scatter.pdf->generate(record.normal);
-			const Scalar pdf0 = scatter.pdf->value(record.normal, currentRay.direction);
-			const Scalar pdf1 = lightPDF.value(lightDir, currentRay.direction);
-			const Scalar mix_pdf = (1. - P) * pdf0 + P * pdf1;
-			mult *= record.hittable->scattering_pdf(record.normal, currentRay.direction) / mix_pdf;
+			Scalar pr, pdf_val;
+			if(importantPoints.empty() || (pr = Random::realRange(0., priority_sum)) <= 1.) {
+				currentRay.direction = scatter.pdf->generate(record.normal);
+				pdf_val = scatter.pdf->value(record.normal, currentRay.direction);
+				for(const ImportantPoint &ip : importantPoints) pdf_val += ip.priority * ip.getPDFVal(currentRay);
+			} else {
+				-- pr;
+				int i = 0;
+				while(i+1 < (int) importantPoints.size() && pr > importantPoints[i].priority) pr -= importantPoints[i++].priority;
+				const auto &[ipPDF, ipDir] = importantPoints[i].getPDF(currentRay.origin);
+				currentRay.direction = ipPDF.generate(ipDir);
+				pdf_val = scatter.pdf->value(record.normal, currentRay.direction)
+						+ importantPoints[i].priority * ipPDF.value(ipDir, currentRay.direction);
+				for(int j = 0; j < i; ++j) pdf_val += importantPoints[j].priority * importantPoints[j].getPDFVal(currentRay);
+				for(int j = i+1; j < (int) importantPoints.size(); ++j) pdf_val += importantPoints[j].priority * importantPoints[j].getPDFVal(currentRay);
+			}
+			mult *= record.hittable->scattering_pdf(record.normal, currentRay.direction) * priority_sum / pdf_val;
 			if(fogCoeff * mult.maxCoeff() < MIN_MULT) return;
-			// ===========
 		}
 		goto rayTrace;
 	} else if constexpr(sky) {
@@ -84,7 +106,7 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 
 	// Camera
 	const Scalar fov = 30.;
-	const Scalar aperture = 0.09;
+	const Scalar aperture = 0.086;
 	const Scalar aspectRatio = 16. / 9.;
 	const Vec3 camPos(13.6, 2., 3.6);
 	camera = Camera(camPos, -camPos, up, fov, aspectRatio, aperture, 10.);
@@ -113,7 +135,7 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 			Scalar rand_mat = Random::real();
 			if(rand_mat < .5) mat = std::make_shared<Lambertian>(Color::random() * Color::random());
 			else if(rand_mat < .8) mat = std::make_shared<Metal>(Color::randomRange(.5, 1.), Random::realRange(0., 0.5));
-			else if(rand_mat < .9) mat = std::make_shared<DiffuseLight>(Color::randomRange(.5, 2.4));
+			else if(rand_mat < .9) mat = std::make_shared<DiffuseLight>(Color::randomRange(.5, 2.5));
 			else mat = glassMat;
 			world.add(std::make_shared<Sphere>(center, .2, mat));
 		}
@@ -166,6 +188,10 @@ HittableList cornellBox() {
 	// Inside boxes
 	addBoxRotY(world, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., aluminium);
 	addBoxRotY(world, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
+
+	// Important points
+	importantPoints.emplace_back(Vec3(.5*(213.+343.), 554., .5*(227.+332.)), 150., 0.6);
+	importantPoints.emplace_back(Vec3(350., 200., 380.), 100., 0.2);
 	
 	return world;
 }
@@ -196,8 +222,11 @@ HittableList nextWeekScene() {
 		}
 	}
 	addBoxRotY(world, Vec3(.999*boxWidth, 106., .999*boxWidth), Vec3(.0005*boxWidth, 0., boxWidth * 2.0005), 0., glassMat);
-	world.add(std::make_shared<Sphere>(Vec3(50., 50., 250.), 25.,
+	const Vec3 lightSpherePos(50., 50., 250.);
+	const Scalar lightSphereRad = 25.;
+	world.add(std::make_shared<Sphere>(lightSpherePos, lightSphereRad,
 								std::make_shared<DiffuseLight>(Color(2., 2., 2.))));
+	importantPoints.emplace_back(lightSpherePos, 2.*lightSphereRad, .1);
 
 	// Bunny
 	HittableList bunny;
@@ -208,11 +237,15 @@ HittableList nextWeekScene() {
 	// Light
 	world.add(std::make_shared<Quad>(Vec3(123, 554, 147), Vec3(423, 554, 147), Vec3(113, 554, 412),
 								std::make_shared<DiffuseLight>(Color(7., 7., 7.))));
+	importantPoints.emplace_back(Vec3(273., 554., 285.), 420., .6);
 	
 	// Some spheres
+	const Vec3 glassSpherePos(260., 150., 45.);
+	const Scalar glassSphereRad = 50.;
+	world.add(std::make_shared<Sphere>(glassSpherePos, glassSphereRad, glassMat));
+	importantPoints.emplace_back(glassSpherePos, 2.*glassSphereRad, .06);
 	world.add(std::make_shared<Sphere>(Vec3(415., 400., 200.), 50.,
 								std::make_shared<Lambertian>(Color(.7, .3, .1))));
-	world.add(std::make_shared<Sphere>(Vec3(260., 150., 45.), 50., glassMat));
 	world.add(std::make_shared<Sphere>(Vec3(0., 150., 145.), 50.,
 								std::make_shared<Metal>(Color(.8, .8, .9), .8)));
 	world.add(std::make_shared<Sphere>(Vec3(400., 200., 400.), 100.,
@@ -221,11 +254,14 @@ HittableList nextWeekScene() {
 								std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.1))));
 
 	// Medium
-	std::shared_ptr<Hittable> mediumBound = std::make_shared<Sphere>(Vec3(360., 150., 145.), 70., glassMat);
+	const Vec3 mediumSpherePos(360., 150., 145.);
+	const Scalar mediumSphereRad = 70.;
+	std::shared_ptr<Hittable> mediumBound = std::make_shared<Sphere>(mediumSpherePos, mediumSphereRad, glassMat);
+	importantPoints.emplace_back(mediumSpherePos, 2.*mediumSphereRad, .04);
 	world.add(mediumBound);
 	world.add(std::make_shared<ConstantMedium>(mediumBound, .02, Color(.2, .4, .9)));
 	mediumBound = std::make_shared<Sphere>(Vec3(100., 50., 200.), 800., glassMat);
-	world.add(std::make_shared<ConstantMedium>(mediumBound, 8e-5, Color(1., 1., 1.)));
+	world.add(std::make_shared<ConstantMedium>(mediumBound, 7e-5, Color(1., 1., 1.)));
 
 	// Many balls
 	HittableList ballBox;
@@ -307,7 +343,7 @@ int main() {
 	HittableList list;
 	switch(scene) {
 	case 0:
-		list = randomScene(false, false);
+		list = randomScene(false, true);
 		break;
 	case 1:
 		list = cornellBox();
@@ -319,6 +355,7 @@ int main() {
 	world = new BVHNode(list);
 	// world = new BVHTree(list);
 	img = new u_char[imgWidth * imgHeight * 3];
+	for(const ImportantPoint &ip : importantPoints) priority_sum += ip.priority;
 
 	render();
 	stbi_write_png("pre.png", imgWidth, imgHeight, 3, img, 0);

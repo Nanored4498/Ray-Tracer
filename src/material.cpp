@@ -1,6 +1,7 @@
 #include "hittable.h"
 
-const PDF* Lambertian::pdf = new CosinePDF(1.);
+const CosinePDF lambertianPdf(1.);
+const PDF* Lambertian::pdf = &lambertianPdf;
 
 bool Lambertian::scatter(UNUSUED const Ray &ray, const HitRecord &record, ScatterRecord &out) const {
 	out.emitted.zero();

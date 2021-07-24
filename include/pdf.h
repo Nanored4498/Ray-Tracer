@@ -22,7 +22,7 @@ public:
 		return Vec3::randomSphere();
 	}
 
-	static const PDF* instance;
+	static const PDF *instance;
 };
 
 class CosinePDF : public PDF {
