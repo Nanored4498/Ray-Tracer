@@ -156,17 +156,17 @@ void loadOBJ(const std::string &fileName, HittableList &list, const Vec3 &rotAxi
 	}
 	ifs.close();
 
-	Vec3 boxMid = .5 * (box.min() + box.max());
-	double scale0 = 1. / (box.max() - box.min()).maxCoeff();
-	Vec3 z = rotAxis.normalized();
+	const Vec3 boxMid = .5 * (box.min() + box.max());
+	const Scalar scale0 = 1. / (box.max() - box.min()).maxCoeff();
+	const Vec3 z = rotAxis.normalized();
 	Vec3 x = Vec3::random();
 	x = (x - dot(x, z) * z).normalized();
-	Vec3 y = cross(z, x);
+	const Vec3 y = cross(z, x);
 	angle *= M_PI / 180.;
-	Scalar co = std::cos(angle), si = std::sin(angle);
+	const Scalar co = std::cos(angle), si = std::sin(angle);
 	for(Vec3 &v : vertices) {
 		v = (v - boxMid) * scale0;
-		Scalar vx = dot(v, x), vy = dot(v, y);
+		const Scalar vx = dot(v, x), vy = dot(v, y);
 		v = pos + scale * (dot(v, z) * z + (vx * co - vy * si) * x + (vx * si + vy * co) * y);
 	}
 

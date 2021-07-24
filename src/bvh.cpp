@@ -94,13 +94,13 @@ bool BVHTree::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 		if(Q.top().first >= tMax) break;
 		const Hittable* h = Q.top().second;
 		Q.pop();
-		double t0 = Q.empty() ? std::numeric_limits<Scalar>::max() : Q.top().first + EPS;
-		double t;
+		Scalar t0 = Q.empty() ? std::numeric_limits<Scalar>::max() : Q.top().first + EPS;
+		Scalar t;
 		while(h->isNode()) {
 			UPDATE_NODE_STATS
 			const BVHNode *node = static_cast<const BVHNode*>(h);
 			if(node->left->hitBoxInv(rayInv, tMax, t)) {
-				double t2;
+				Scalar t2;
 				if(node->right->hitBoxInv(rayInv, tMax, t2)) {
 					if(t < t2) {
 						Q.emplace(t2, node->right.get());

@@ -36,7 +36,7 @@ private:
 
 class NoiseTexture : public Texture {
 public:
-	NoiseTexture(double scale);
+	NoiseTexture(Scalar scale);
 	~NoiseTexture() {
 		delete[] vecs;
 		delete[] perms[0];
@@ -49,7 +49,7 @@ private:
 	static const int nbVals = 1<<8;
 	Vec3 *vecs;
 	int *perms[2];
-	double scale;
+	Scalar scale;
 };
 
 class ImageTexture : public Texture {

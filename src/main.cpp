@@ -10,7 +10,7 @@
 #include <iostream>
 #include <thread>
 
-constexpr int SamplesPerPixel = 100;
+constexpr int SamplesPerPixel = 1000;
 constexpr int maxDepth = 40;
 constexpr int scene = 1;
 const Vec3 up(0., 1., 0.);
@@ -25,6 +25,45 @@ constexpr Scalar fogMul = - scene_fog[scene];
 
 Camera camera;
 int imgWidth, imgHeight;
+
+Vec3 emitInDir(const Vec3 &normal, const double power) {
+	const Scalar cn = std::pow(Random::real(), 1. / (power + 1.));
+	const Scalar phi = Random::angle();
+	const Scalar ax = std::abs(normal.x), ay = std::abs(normal.y), az = std::abs(normal.z);
+	if(ax < ay && ax < az) {
+		const Scalar nyz = normal.y*normal.y + normal.z*normal.z;
+		const Scalar o = std::sqrt((1. - cn*cn) / nyz);
+		const Scalar co = o * std::cos(phi), si = o * std::sin(phi);
+		return Vec3(
+			cn * normal.x +                 si * nyz,
+			cn * normal.y + co * normal.z - si * normal.y * normal.x,
+			cn * normal.z - co * normal.y - si * normal.z * normal.x
+		);
+	} else if(ay < az) {
+		const Scalar nzx = normal.z*normal.z + normal.x*normal.x;
+		const Scalar o = std::sqrt((1. - cn*cn) / nzx);
+		const Scalar co = o * std::cos(phi), si = o * std::sin(phi);
+		return Vec3(
+			cn * normal.x - co * normal.z - si * normal.x * normal.y,
+			cn * normal.y +                 si * nzx,
+			cn * normal.z + co * normal.x - si * normal.z * normal.y
+		);
+	} else {
+		const Scalar nxy = normal.x*normal.x + normal.y*normal.y;
+		const Scalar o = std::sqrt((1. - cn*cn) / nxy);
+		const Scalar co = o * std::cos(phi), si = o * std::sin(phi);
+		return Vec3(
+			cn * normal.x + co * normal.y - si * normal.x * normal.z,
+			cn * normal.y - co * normal.x - si * normal.y * normal.z,
+			cn * normal.z +                 si * nxy
+		);
+	}
+}
+
+double pdfInDir(const Vec3 &normal, const double power, const Vec3 &dir) {
+	const Scalar cosTheta = dot(normal, dir);
+	return cosTheta <= 0. ? 0. : std::pow(cosTheta, power) * (power + 1.) * (.5 * (1. / M_PI));
+}
 
 constexpr Scalar MIN_MULT = 2.e-4;
 void rayColor(const Ray &ray, const Hittable *world, Color &color) {
@@ -41,23 +80,28 @@ void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 		record.normal = record.hittable->getNormal(scattered.origin, currentRay);
 		const bool newRay = record.hittable->scatter(currentRay, record, emitted, attenuation, scattered);
 		tot_dist += record.t;
-		const double fogCoeff = std::exp(fogMul * tot_dist);
+		const Scalar fogCoeff = std::exp(fogMul * tot_dist);
 		if(emitted != Vec3(0., 0., 0.)) color += fogCoeff * mult * emitted;
 		if(newRay && ++depth < maxDepth) {
 			mult *= attenuation;
 			if(fogCoeff * mult.maxCoeff() > MIN_MULT) {
 				currentRay = scattered;
 				// === TMP ===
-				if(Random::real() < .5) {
-					currentRay.direction = Vec3(Random::realRange(213., 343.), 554., Random::realRange(227., 332.)) - currentRay.origin;
-					if(dot(currentRay.direction, record.normal) < 0.) return;
-					const double inv_d2 = 1. / currentRay.direction.norm2();
-					currentRay.direction *= std::sqrt(inv_d2);
-					const double light_cos = std::abs(currentRay.direction.y);
-					if(light_cos < MIN_MULT) return;
-					const double inv_pdf = (343.-213.) * (332.-227.) * light_cos * inv_d2;
-					mult *= record.hittable->scattering_pdf(currentRay, record.normal) * inv_pdf;
+				constexpr Scalar P = .4;
+				Vec3 lightDir = Vec3(.5*(213.+343.), 554., .5*(227.+332.)) - currentRay.origin;
+				const Scalar lightDiam = 150.;
+				const Scalar lightPowerMul = 10. / (lightDiam * lightDiam);
+				const Scalar lightDist = lightDir.norm();
+				lightDir /= lightDist;
+				const Scalar power = lightDist * lightDist * lightPowerMul;
+				if(Random::real() < P) {
+					currentRay.direction = emitInDir(lightDir, power);
+					if(dot(currentRay.direction, lightDir) <= 0.) return;
 				}
+				const Scalar pdf0 = record.hittable->scattering_pdf(currentRay, record.normal);
+				const Scalar pdf1 = pdfInDir(lightDir, power, currentRay.direction);
+				const Scalar mix_pdf = (1. - P) * pdf0 + P * pdf1;
+				mult *= pdf0 / mix_pdf;
 				// ===========
 				goto rayTrace;
 			}

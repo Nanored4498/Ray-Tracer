@@ -21,7 +21,7 @@ bool ConstantMedium::hit(const Ray &ray, Scalar tMax, HitRecord &record) const {
 	return true;
 }
 
-bool ConstantMedium::scatter(const Ray &ray, const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const {
+bool ConstantMedium::scatter(UNUSUED const Ray &ray, UNUSUED const HitRecord &record, Color &emitted, Color &attenuation, Ray &scattered) const {
 	emitted.zero();
 	attenuation = color;
 	scattered.direction = Vec3::randomSphere();

@@ -9,7 +9,7 @@ bool Lambertian::scatter(UNUSUED const Ray &ray, const HitRecord &record, Color 
 	attenuation = albedo->value(record.hittable, scattered.origin, normal);
 	Scalar n = Random::real();
 	const Scalar phi = Random::angle();
-	const double ax = std::abs(normal.x), ay = std::abs(normal.y), az = std::abs(normal.z);
+	const Scalar ax = std::abs(normal.x), ay = std::abs(normal.y), az = std::abs(normal.z);
 	if(ax < ay && ax < az) {
 		const Scalar nyz = normal.y*normal.y + normal.z*normal.z;
 		const Scalar o = std::sqrt(n / nyz);
@@ -38,8 +38,8 @@ bool Lambertian::scatter(UNUSUED const Ray &ray, const HitRecord &record, Color 
 	return true;
 }
 
-double Lambertian::scattering_pdf(const Ray &scattered, const Vec3 &normal) const {
-	const double cosTheta = dot(normal, scattered.direction);
+Scalar Lambertian::scattering_pdf(const Ray &scattered, const Vec3 &normal) const {
+	const Scalar cosTheta = dot(normal, scattered.direction);
 	return cosTheta <= 0. ? 0. : cosTheta * (1. / M_PI);
 }
 

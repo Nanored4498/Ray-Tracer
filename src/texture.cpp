@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-NoiseTexture::NoiseTexture(double scale): scale(scale) {
+NoiseTexture::NoiseTexture(Scalar scale): scale(scale) {
 	vecs = new Vec3[nbVals];
 	for(int i = 0; i < nbVals; ++i) vecs[i] = Vec3::randomSphere();
 	for(int i = 0; i < 2; ++i) {
