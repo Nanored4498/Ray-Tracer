@@ -3,8 +3,7 @@
 const UniformPDF uniformPDF;
 const PDF* UniformPDF::instance = &uniformPDF;
 
-Vec3 CosinePDF::generate(const Vec3 &normal) const {
-	const Scalar cn = std::pow(Random::real(), 1. / (power + 1.));
+Vec3 genPhiIndependant(const Vec3 &normal, const Scalar cn) {
 	const Scalar phi = Random::angle();
 	const Scalar ax = std::abs(normal.x), ay = std::abs(normal.y), az = std::abs(normal.z);
 	if(ax < ay && ax < az) {
@@ -35,4 +34,14 @@ Vec3 CosinePDF::generate(const Vec3 &normal) const {
 			cn * normal.z +                 si * nxy
 		);
 	}
+}
+
+Vec3 CosinePDF::generate(const Vec3 &normal) const {
+	const Scalar cn = std::pow(Random::real(), 1. / (power + 1.));
+	return genPhiIndependant(normal, cn);
+}
+
+Vec3 ConePDF::generate(const Vec3 &normal) const {
+	const Scalar cn = 1. - Random::real() * (cosMax - 1.);
+	return genPhiIndependant(normal, cn);
 }
