@@ -17,10 +17,10 @@ const Vec3 up(0., 1., 0.);
 
 constexpr bool scene_sky[3] { true, false, false };
 constexpr bool sky = scene_sky[scene];
-const Vec3 skyDown(.36, .08, .0), skyUp(.023, .004, .0);
+const Vec3 skyDown(.32, .07, .0), skyUp(.02, .004, .0);
 const Vec3 skyDiff = skyUp - skyDown;
 
-constexpr Scalar scene_fog[3] { 2.e-2, 5.e-5, 1.e-4 };
+constexpr Scalar scene_fog[3] { 1.3e-2, 5.e-5, 1.e-4 };
 constexpr Scalar fogMul = - scene_fog[scene];
 
 Camera camera;
@@ -53,14 +53,14 @@ void rayColor(const Ray &ray, const Hittable *world, Color &color) {
 		else {
 			currentRay.origin = scatter.ray.origin;
 			// === TMP ===
-			constexpr Scalar P = .4;
 			Vec3 lightDir = Vec3(.5*(213.+343.), 554., .5*(227.+332.)) - currentRay.origin;
 			const Scalar lightDiam = 150.;
-			const Scalar lightPowerMul = 10. / (lightDiam * lightDiam);
+			const Scalar lightPowerMul = 8. / (lightDiam * lightDiam);
 			const Scalar lightDist = lightDir.norm();
 			lightDir /= lightDist;
-			const Scalar power = lightDist * lightDist * lightPowerMul;
-			CosinePDF lightPDF(power);
+			const Scalar power = std::min(80., lightDist * lightDist * lightPowerMul);
+			const CosinePDF lightPDF(power);
+			const Scalar P = std::min(.5, std::max(0., .3 + .3*dot(lightDir, record.normal)));
 			if(Random::real() < P) {
 				currentRay.direction = lightPDF.generate(lightDir);
 				if(dot(currentRay.direction, lightDir) <= 0.) return;
@@ -92,9 +92,9 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 	imgHeight = imgWidth / aspectRatio;
 
 	// Ground
-	if(noisyGround) world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
+	if(noisyGround) world.add(std::make_shared<Sphere>(Vec3(0., -4000., 0.), 4000.,
 								std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(4.))));
-	else world.add(std::make_shared<Sphere>(Vec3(0., -5000., 0.), 5000.,
+	else world.add(std::make_shared<Sphere>(Vec3(0., -4000., 0.), 4000.,
 						std::make_shared<Lambertian>(std::make_shared<CheckerTexture>(Color(.75, .75, .75), Color(1., .3, .1)))));
 
 	// Grid of spheres
@@ -113,7 +113,7 @@ HittableList randomScene(bool bunny = true, bool noisyGround = true) {
 			Scalar rand_mat = Random::real();
 			if(rand_mat < .5) mat = std::make_shared<Lambertian>(Color::random() * Color::random());
 			else if(rand_mat < .8) mat = std::make_shared<Metal>(Color::randomRange(.5, 1.), Random::realRange(0., 0.5));
-			else if(rand_mat < .9) mat = std::make_shared<DiffuseLight>(Color::randomRange(.5, 2.8));
+			else if(rand_mat < .9) mat = std::make_shared<DiffuseLight>(Color::randomRange(.5, 2.4));
 			else mat = glassMat;
 			world.add(std::make_shared<Sphere>(center, .2, mat));
 		}
@@ -152,28 +152,19 @@ HittableList cornellBox() {
 		red = std::make_shared<Lambertian>(Color(.65, .05, .05)),
 		white = std::make_shared<Lambertian>(Color(.73, .73, .73)),
 		green = std::make_shared<Lambertian>(Color(.12, .45, .15)),
-		// light = std::make_shared<DiffuseLight>(Color(7., 7., 7.));
-		light = std::make_shared<DiffuseLight>(Color(15., 15., 15.));
+		light = std::make_shared<DiffuseLight>(Color(15., 15., 15.)),
+		aluminium = std::make_shared<Metal>(Color(.8, .85, .88), 0.);
 	
+	// Scene box
 	world.add(std::make_shared<Quad>(Vec3(555, 0, 0), Vec3(555, 0, 555), Vec3(555, 555, 0), green));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 555, 0), Vec3(0, 0, 555), red));
-	// world.add(std::make_shared<Quad>(Vec3(113, 554, 127), Vec3(443, 554, 127), Vec3(113, 554, 432), light));
 	world.add(std::make_shared<Quad>(Vec3(213, 554, 227), Vec3(343, 554, 227), Vec3(213, 554, 332), light));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 555), Vec3(555, 555, 555), Vec3(0, 0, 555), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 0, 555), Vec3(555, 0, 0), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 0), Vec3(555, 555, 0), Vec3(0, 555, 555), white));
 
-	/*
-	loadOBJ("../meshes/bunny.obj", world, Vec3(0., 1, 0.), 180., 320., Vec3(278., 153., 320.),
-			std::make_shared<Lambertian>(std::make_shared<NoiseTexture>(.09)));
-	std::shared_ptr<HittableList> box1 = std::make_shared<HittableList>();
-	addBoxRotY(*box1, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., white);
-	world.add(std::make_shared<ConstantMedium>(box1, .01, Color(0., 0., 0.)));
-	std::shared_ptr<HittableList> box2 = std::make_shared<HittableList>();
-	addBoxRotY(*box2, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
-	world.add(std::make_shared<ConstantMedium>(box2, .01, Color(1., 1., 1.)));
-	*/
-	addBoxRotY(world, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., white);
+	// Inside boxes
+	addBoxRotY(world, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., aluminium);
 	addBoxRotY(world, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
 	
 	return world;
