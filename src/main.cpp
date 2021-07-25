@@ -10,7 +10,7 @@
 #include <iostream>
 #include <thread>
 
-constexpr int SamplesPerPixel = 100;
+constexpr int SamplesPerPixel = 2345;
 constexpr int maxDepth = 40;
 constexpr int scene = 1;
 const Vec3 up(0., 1., 0.);
@@ -156,23 +156,28 @@ HittableList cornellBox() {
 		white = std::make_shared<Lambertian>(Color(.73, .73, .73)),
 		green = std::make_shared<Lambertian>(Color(.12, .45, .15)),
 		light = std::make_shared<DiffuseLight>(Color(15., 15., 15.)),
-		aluminium = std::make_shared<Metal>(Color(.8, .85, .88), 0.);
+		aluminium = std::make_shared<Metal>(Color(.8, .85, .88), 0.01),
+		glass = std::make_shared<Dielectric>(1.5);
 	
 	// Scene box
 	world.add(std::make_shared<Quad>(Vec3(555, 0, 0), Vec3(555, 0, 555), Vec3(555, 555, 0), green));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 555, 0), Vec3(0, 0, 555), red));
-	world.add(std::make_shared<Quad>(Vec3(213, 554, 227), Vec3(343, 554, 227), Vec3(213, 554, 332), light));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 555), Vec3(555, 555, 555), Vec3(0, 0, 555), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 0, 0), Vec3(0, 0, 555), Vec3(555, 0, 0), white));
 	world.add(std::make_shared<Quad>(Vec3(0, 555, 0), Vec3(555, 555, 0), Vec3(0, 555, 555), white));
 
-	// Inside boxes
-	addBoxRotY(world, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., aluminium);
-	addBoxRotY(world, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
-
-	// Important points
+	// Light
+	world.add(std::make_shared<Quad>(Vec3(213, 554, 227), Vec3(343, 554, 227), Vec3(213, 554, 332), light));
 	samplers.emplace_back(.6, std::make_unique<TargetCosinePDF>(Vec3(278., 554., 279.5), 80.));
-	samplers.emplace_back(.2, std::make_unique<TargetCosinePDF>(Vec3(366., 165., 353.), 110.));
+
+	// Inside boxes
+	const Vec3 spherePos(190., 90., 190.);
+	const Scalar sphereRad = 90.;
+	world.add(std::make_shared<Sphere>(spherePos, sphereRad, glass));
+	// samplers.emplace_back(.1, std::make_unique<TargetConePDF>(spherePos, sphereRad));
+	addBoxRotY(world, Vec3(165., 330., 165.), Vec3(265., 0., 295.), -15., aluminium);
+	samplers.emplace_back(.3, std::make_unique<TargetCosinePDF>(Vec3(366., 165., 353.), 110.));
+	// addBoxRotY(world, Vec3(165., 165., 165.), Vec3(130., 0., 65.), 18., white);
 	
 	return world;
 }

@@ -13,3 +13,7 @@ _Doug Baldwin and Michael Weber, Fast Ray-Triangle Intersections by Coordinate T
 Here is the final scene of [_Ray Tracing: The Next Week_](https://raytracing.github.io/books/RayTracingTheNextWeek.html):
 
 ![NextWeek](results/nextWeek.png)
+
+Finnaly, here is a Cornell Box from [_Ray Tracing: The Rest of Your Life_](https://raytracing.github.io/books/RayTracingTheRestOfYourLife.html) rendered with some importance sampling:
+
+![Cornell](results/cornell.png)
