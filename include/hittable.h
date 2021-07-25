@@ -25,7 +25,7 @@ public:
 		out.emitted.zero();
 		return false;
 	}
-	inline virtual Scalar scattering_pdf(UNUSUED const Vec3 &normal, UNUSUED const Vec3 &scattered) const { return 0.; }
+	inline virtual Scalar scattering_pdf(UNUSUED const Vec3 &normal, UNUSUED const Ray &ray) const { return 0.; }
 
 	virtual Vec3 getNormal(const Vec3 &pos, const Ray &ray) const = 0;
 

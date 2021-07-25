@@ -189,8 +189,8 @@ void addBox(HittableList &list, const Vec3 &a, const Vec3 &b, const Vec3 &c, con
 void addBoxRotY(HittableList &list, const Vec3 &size, const Vec3 &pos, Scalar angle, std::shared_ptr<const Material> material, bool biface) {
 	angle *= M_PI / 180.;
 	const Scalar co = std::cos(angle), si = std::sin(angle);
-	const Vec3 b = pos + size.x * Vec3(co, 0., si);
-	const Vec3 c = pos + size.y * Vec3(0., 1., 0.);
+	const Vec3 b = pos + size.x * Vec3(co,  0., si);
+	const Vec3 c = pos + size.y * Vec3(0.,  1., 0.);
 	const Vec3 d = pos + size.z * Vec3(-si, 0., co);
 	addBox(list, pos, b, c, d, material, biface);
 }

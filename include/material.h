@@ -20,7 +20,7 @@ public:
 	virtual ~Material() {}
 
 	virtual bool scatter(const Ray &ray, const HitRecord &record, ScatterRecord &out) const = 0;
-	inline virtual Scalar scattering_pdf(UNUSUED const Vec3 &normal, UNUSUED const Vec3 &scattered) const { return 0.; }
+	inline virtual Scalar scattering_pdf(UNUSUED const Vec3 &normal, UNUSUED const Ray &ray) const { return 0.; }
 };
 
 class Lambertian : public Material {
@@ -29,8 +29,8 @@ public:
 	Lambertian(std::shared_ptr<Texture> albedo): albedo(std::move(albedo)) {}
 
 	bool scatter(const Ray &ray, const HitRecord &record, ScatterRecord &out) const override;
-	inline Scalar scattering_pdf(const Vec3 &normal, const Vec3 &scattered) const override {
-		return pdf->value(normal, scattered);
+	inline Scalar scattering_pdf(const Vec3 &normal, const Ray &ray) const override {
+		return pdf->value(normal, ray);
 	}
 
 private:

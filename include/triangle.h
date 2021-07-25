@@ -11,8 +11,8 @@ public:
 	inline bool scatter(const Ray &ray, const HitRecord &record, ScatterRecord &out) const override {
 		return material->scatter(ray, record, out);
 	}
-	inline virtual Scalar scattering_pdf(UNUSUED const Vec3 &normal, UNUSUED const Vec3 &scattered) const override {
-		return material->scattering_pdf(normal, scattered);
+	inline virtual Scalar scattering_pdf(const Vec3 &normal, const Ray &ray) const override {
+		return material->scattering_pdf(normal, ray);
 	}
 
 	inline Vec3 getNormal(const Vec3 &, const Ray &ray) const override {

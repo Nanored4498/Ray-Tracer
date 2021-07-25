@@ -36,12 +36,43 @@ Vec3 genPhiIndependant(const Vec3 &normal, const Scalar cn) {
 	}
 }
 
-Vec3 CosinePDF::generate(const Vec3 &normal) const {
-	const Scalar cn = std::pow(Random::real(), 1. / (power + 1.));
-	return genPhiIndependant(normal, cn);
+Scalar CosinePDF::generate(const Vec3 &normal, Ray &ray) const {
+	const Scalar pp1 = power + 1.;
+	const Scalar cn = std::pow(Random::real(), 1. / pp1);
+	ray.direction = genPhiIndependant(normal, cn);
+	return std::pow(cn, power) * pp1 * (.5 * (1. / M_PI));
 }
 
-Vec3 ConePDF::generate(const Vec3 &normal) const {
-	const Scalar cn = 1. - Random::real() * (cosMax - 1.);
-	return genPhiIndependant(normal, cn);
+Scalar ConePDF::generate(const Vec3 &normal, Ray &ray) const {
+	const Scalar cn = 1. + Random::real() * (cosMax - 1.);
+	ray.direction = genPhiIndependant(normal, cn);
+	return val;
+}
+
+Scalar TargetCosinePDF::value(UNUSUED const Vec3 &normal, const Ray &ray) const {
+	const Vec3 dir = pos - ray.origin;
+	const Scalar dist2 = dir.norm2();
+	const Scalar power = std::min(80., dist2 * powerMul);
+	return CosinePDF(power).value(dir / std::sqrt(dist2), ray);
+}
+
+Scalar TargetCosinePDF::generate(UNUSUED const Vec3 &normal, Ray &ray) const {
+	const Vec3 dir = pos - ray.origin;
+	const Scalar dist2 = dir.norm2();
+	const Scalar power = std::min(80., dist2 * powerMul);
+	return CosinePDF(power).generate(dir / std::sqrt(dist2), ray);
+}
+
+Scalar TargetConePDF::value(UNUSUED const Vec3 &normal, const Ray &ray) const {
+	const Vec3 dir = pos - ray.origin;
+	const Scalar inv_dist2 = 1. / dir.norm2();
+	const Scalar cosMax = 1. / std::sqrt(1. + rad2 * inv_dist2);
+	return ConePDF(cosMax).value(dir * std::sqrt(inv_dist2), ray);
+}
+
+Scalar TargetConePDF::generate(UNUSUED const Vec3 &normal, Ray &ray) const {
+	const Vec3 dir = pos - ray.origin;
+	const Scalar inv_dist2 = 1. / dir.norm2();
+	const Scalar cosMax = 1. / std::sqrt(1. + rad2 * inv_dist2);
+	return ConePDF(cosMax).generate(dir * std::sqrt(inv_dist2), ray);
 }
